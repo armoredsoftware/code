@@ -1,0 +1,10 @@
+domain-needed
+local=/CLOUD_EXT_DOMAIN/
+interface=CLOUD_EXT_ROUTER_DEVICE
+interface=lo
+bind-interfaces
+addn-hosts=/etc/hosts-armored
+expand-hosts
+domain=CLOUD_EXT_DOMAIN,CLOUD_EXT_ROUTER_IPADDR/24
+dhcp-range=10.0.0.1,static,infinite
+dhcp-option=option:router,CLOUD_EXT_ROUTER_IPADDR

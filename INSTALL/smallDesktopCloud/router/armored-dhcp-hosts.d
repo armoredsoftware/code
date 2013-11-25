@@ -1,0 +1,1 @@
+#dhcp-host=COMPUTE_HOSTNAME_PREFIX3
