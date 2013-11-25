@@ -1,0 +1,228 @@
+#!/bin/bash
+#
+# Define some general use functions need by the scripts.
+#
+
+# Check that we are running as the root user.
+# Usage: check_root_user
+check_root_user ()
+{
+  USER=`whoami`
+  if [ "$USER"  != 'root' ]; then
+  echo "!!! You must run the script as user 'root'"
+  echo "Exiting"
+  exit 1
+  fi
+}
+
+# get an email address for the keystone user accounts. 
+# Use the name of the user (if sudo is used) and a domain of ittc.ku.edu
+# The email address is printed to stdout.
+# Usage: VALUE=get_email_address
+get_email_address () {
+  if [ "${SUDO_USER}" != "" ] ; then
+    echo "${SUDO_USER}@ittc.ku.edu"
+  else 
+    echo "alex@ittc.ku.edu"
+  fi
+}
+
+# Source the keystone rc file.
+# Usage: source_keystone_rc
+# Look for the file .keystone.rc in current directory, then TOP_LEVEL directory
+# then ~SUDO_USER directory.
+# Environment variables
+#  - TOP_LEVEL if this is defined then the file .keystone.rc will
+#              be looked for in ${TOP_LEVEL} directory.
+#  - SUDO_USER if the fileis not in the current dir or TOP_LEVEL then
+#              look in directory ~${SUDO_USER}.
+source_keystone_rc () {
+  # Look in current directory first.
+  if [ -f ./.keystone.rc ] ; then
+    source ./.keystone.rc
+  else
+    # Look in armored top level dir
+    if [ -f ${TOP_LEVEL}/.keystone.rc ] ; then
+        source ${TOP_LEVEL}/.keystone.rc
+    else
+      if [ -f ~${SUDO_USER}/.keystone.rc ] ; then
+        source ~${SUDO_USER}/.keystone.rc
+      else 
+        echo "!!!!!! Could not find a .keystone.rc file to source."
+        exit 1
+      fi
+    fi
+  fi
+}
+
+# Check to make sure we can reach the mysql service.
+# Usage: check_mysql_running
+check_mysql_running () {
+  mysql --user=root --password=${MYSQL_ROOT_PW} --execute ""
+  if [ "$?" != "0" ] ; then
+    echo "!!!!! Could not talk to mysql server. Do you need to run script mysql.sh"
+    exit 1
+  fi
+}
+
+# Check to make sure the message queue daemon is running.
+# Usage: check_message_queue_running
+check_message_queue_running () {
+  ps aux | grep -e "^qpidd" > /dev/null
+  if [ "$?" != "0" ] ; then
+    echo "!!!!! Did not find message queue deamon qpidd running. Do you need to run script messageing.sh?"
+    exit 1
+  fi
+}
+
+# Make sure the open stack utilities have been loaded.
+# Usage: check_openstack_utils
+check_openstack_utils () {
+  which openstack-config > /dev/null
+  if [ "$?" != "0" ] ; then 
+    echo "!!!!! Did not find openstack utility function. Do you need to run script openstack-pgk.sh?"
+    exit 1
+  fi
+}
+
+# Source the keystone rc file then try to talk to keystone.
+# Exit if we can not talk to keystone.
+check_keystone_access () {
+  source_keystone_rc
+
+  # Make sure that we can talk to keystone.
+  keystone user-list > /dev/null
+  if [ "$?" != "0" ] ; then
+    echo "!!!!!! Failed to talk to keystone service."
+    exit 1;
+  fi
+
+}
+
+# Set the authentication credential portion of a service's configuration file.
+# Usage: <confFile> <section>  <authHost> <adminUser> <adminUserPasswd>
+# <section> can be 'DEFAULT' or 'keystone_authtoken'
+# Assumes - that the admin tenant is 'service'.
+# Assumes - that the authentication strategy is 'keystone'.
+# Calling this more than once does not cause a problem.
+set_service_conffile_auth () {
+  echo "# Set authentication credentials in configuration file $1."
+  openstack-config --set $1 $2 auth_strategy keystone
+  openstack-config --set $1 $2 auth_host $3
+  openstack-config --set $1 $2 admin_user $4
+  openstack-config --set $1 $2 admin_tenant_name service
+  openstack-config --set $1 $2 admin_password $5
+}
+
+# Set the authentication credentials in a paste.ini file. Uses the port and 
+# protocol attributes.
+# Usage: set_service_pastefile_auth <pasteFile> <authHost> <adminUser> <adminUserPasswd> <port>
+# Assumes - that the admin tenant is 'service'.
+# Assumes - that the filter_factory is  'keystoneclient...'.
+# Assumes - that the protocol is 'http'.
+# Calling this more than once does not cause a problem.
+
+set_service_pastefile_auth_port_protocol () {
+  # Make sure we have the correct number of arguments.
+  if [ $# -ne 5 ] ; then
+    echo "!!!! Wrong number of arguments to ${FUNCNAME[0]}"
+    exit 1
+  fi
+
+  echo "# Setup the auth credentials in the paste file: '$1'."
+
+  if [ ! -f $1 ] ; then 
+    echo "!!!! set_service_pastefile_auth: The paste file '$1' does not exist."
+    exit 1
+  fi
+
+  openstack-config --set $1 filter:authtoken paste.filter_factory keystoneclient.middleware.auth_token:filter_factory
+  openstack-config --set $1 filter:authtoken auth_host $2
+  openstack-config --set $1 filter:authtoken admin_user $3
+  openstack-config --set $1 filter:authtoken admin_tenant_name service
+  openstack-config --set $1 filter:authtoken admin_password $4
+
+}
+
+# Create the unix nova user and group ids.
+create_nova_unix_user () {
+  # The Nova service uses a unix group and user named 'nova' both with
+  # the ID of 161. If the group and user do not exist then it tries to create
+  # them. On our ITTC system we already have a user and group with ID=161 so
+  # the installation of the nova does not work properly. To get around
+  # this is we create the nova user and group with our own ID.
+  echo "# Setup the nova user and group."
+  getent group nova || groupadd -r --gid 9162 nova
+  getent passwd nova || useradd --uid 9162 -r -g nova -d /var/lib/nova -s /sbin/nologin -c "OpenStack Nova Daemons" nova
+  usermod -G nobody nova
+}
+
+# Create the unix neutron user and group ids.
+create_neutron_unix_user () {
+  # The Nova service uses a unix group and user named 'neutron' both with
+  # the ID of 164. If the group and user do not exist then it tries to create
+  # them. On our ITTC system we already have a user and group with ID=161 so
+  # the installation of the neutron does not work properly. To get around
+  # this is we create the neutron user and group with our own ID.
+  echo "# Setup the neutron user and group."
+  getent group neutron || groupadd -r --gid 9164 neutron
+  getent passwd neutron || useradd --uid 9164 -r -g neutron -d /var/lib/neutron -s /sbin/nologin -c "OpenStack Neutron Daemons" neutron
+}
+
+# Add the openstack hostname for the user to the sudoers file.
+# Usage: add_sudoer_host <user> <host>
+add_sudoer_host () {
+
+  # There must be two arguments set.
+  if [ $# != 2 ] ; then 
+    echo "!!!! add_sudoer_host function, incorrect number of arguments."
+    echo "Usage: function add_sudoer_host <user> <host>"
+    exit 1
+  fi
+
+
+  # See if the user is in the sudoers file.
+  grep -e "^${1}[[:space:]]" /etc/sudoers > /dev/null
+  if [ "$?" != "0" ] ; then
+    # The user is not in the sudoers file.
+    echo "!!!!! The user $1 was was not found in the sudoers file."
+    echo "We only work with user\'s already in the sudoers file."
+    exit 1
+  fi 
+
+  # See if we have already added the host for the user.
+  grep -e "^${1}[[:space:]]" /etc/sudoers | grep -i "${2}=ALL" /etc/sudoers > /dev/null
+  if [ "$?" != "0" ] ; then
+    # The host has not yet been added for the user so add it.
+    echo "# Add host $2 for user $1 in the sudoers file."
+    sed -i -e /^${1}[[:space:]].*=ALL/s/\$/:${2}=ALL/ /etc/sudoers
+    sed -i -e /^${1}[[:space:]].*=SHELLS/s/\$/:${2}=SHELLS/ /etc/sudoers
+  else
+    echo "# The host '$2' has already been added for the user '$1' in the sudoers file."
+  fi 
+}
+
+# Usage: source_file <filename> 
+# Exit, with message, if the file does not exit. Otherwise
+# source the file.
+source_file () {
+  if [ $# -eq 1 ] ; then
+    { . $1 ; } || { echo "!!! Failed to source file $1" ; exit 1; }
+  else
+    echo "!!!! Missing filename argument to fn '${FUNCNAME[0]}'."
+    exit 1
+  fi
+}
+
+#
+# Setup the QPID messaging service parameters in a service config file.
+# Usage: set_qpid_config <configFile> <messageServiceHostAddr>
+set_qpid_config () {
+  if [ $# -ne 2 ] ; then
+    echo "!!!! Need 2 arguments to fn '${FUNCNAME[0]}'."
+    exit 1
+  fi
+  openstack-config --set $1  DEFAULT rpc_backend neutron.openstack.common.rpc.impl_qpid
+  openstack-config --set $1 DEFAULT qpid_hostname $2
+
+}

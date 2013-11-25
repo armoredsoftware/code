@@ -1,0 +1,164 @@
+#!/bin/bash
+# Define some functions used by the network setup script.
+#
+
+# Usage: network_device_must_exist <PARAMETER NAME>
+# Example:
+#  > DEV_NAME=em1
+#  > network_device_must_exist DEV_NAME
+# where <PARAMETER NAME> is the name of a variable that contains the
+# device name.
+# Prints on stdout a message with <PARAMETER NAME> and it value.
+# If the device does not exist 'exit' is called otherwise it returns.
+network_device_must_exist() {
+  if [ $# -ne 1 ] ; then 
+    echo "!!!!! Missing argument to network-device_must_exist."
+    exit 1;
+  fi
+
+  echo "# Checking that network ethernet NIC $1=${!1} exists."
+  ethtool ${!1} > /dev/null >& /dev/null
+  if [ "$?" != "0" ] ; then
+    echo "!!!!!!  Ethernet device ${!1} does not exist."
+    echo "Exiting"
+    exit
+  fi 
+}
+
+
+# Modify the a network device config to be for
+# our external openstack network.
+# Usage: setup_ext_device_networking <deviceName> <IPaddr> <netmask> [<gatewayIP>] 
+# <deviceName> must be the name of a variable the holds a device name. It must
+#     NOT be the device name itself.
+setup_static_device_networking () {
+  if [ "$#" != "4" ] && [ "$#" != "3" ] ; then
+    echo "!!!! setup_ext_device_networking requires 3 or 4 arguments."
+    exit 1
+  fi
+
+  # make sure the device exists.
+  network_device_must_exist $1
+
+  NET_DEVICE=${!1}  
+
+  # Setup the cloud external network device.
+  NET_CFG_FILE=/etc/sysconfig/network-scripts/ifcfg-${NET_DEVICE}
+  echo "# Modifying '${NET_CFG_FILE}' configuration file."
+  sed -i -e /BOOTPROTO/s/=.*$/=static/  $NET_CFG_FILE
+  # Set IP Address
+  grep -e "IPADDR[ ]*=" ${NET_CFG_FILE} > /dev/null
+  if [ "$?" != "0" ] ; then
+    # The IPADDR is not in the file yet so add it.
+    sed -i "/BOOTPROTO/a\
+IPADDR=$2" $NET_CFG_FILE
+  else
+    # It already had IPADDR specified so replace it.
+    sed -i "/IPADDR[ ]*=/s/^.*$/IPADDR=$2/" $NET_CFG_FILE
+  fi 
+  # Set Netmask
+  grep -e "NETMASK[ ]*=" $NET_CFG_FILE > /dev/null
+  if [ "$?" != "0" ] ; then
+    # The NETMASK is not in the file yet so add it after the IPADDR.
+    sed -i -e "/IPADDR[ ]*=/a\
+NETMASK=$3" $NET_CFG_FILE
+  else
+    # It already had NETMASK specified so replace it.
+    sed -i "/NETMASK[ ]*=/s/^.*$/NETMASK=$2/" $NET_CFG_FILE
+  fi 
+
+  if [ $# -eq 4 ] ; then
+    # Set GATEWAY
+    grep -e "GATEWAY[ ]*=" $NET_CFG_FILE > /dev/null
+    if [ "$?" != "0" ] ; then
+      # The GATEWAY is not in the file yet so add it after the NETMASK.
+      sed -i -e "/NETMASK[ ]*=/a\
+GATEWAY=$4" $NET_CFG_FILE
+    else
+      # It already had GATEWAY specified so replace it.
+      sed -i "/GATEWAY/s/^.*$/GATEWAY=$4/" $NET_CFG_FILE
+    fi 
+  else
+    # There was not GATEWAY argument so dont do the keyway.
+    grep -e "GATEWAY[ ]*=" $NET_CFG_FILE > /dev/null
+    if [ "$?" != "0" ] ; then
+      # The GATEWAY is not in the file yet so add it after the NETMASK.
+      # But make it empty
+      sed -i -e "/NETMASK[ ]*=/a\
+#GATEWAY=" $NET_CFG_FILE
+    else
+      # It already had GATEWAY specified so replace it.
+      sed -i "/GATEWAY/s/^.*$/#GATEWAY=/" $NET_CFG_FILE
+    fi 
+  fi
+
+  # This is not our default route.
+  sed -i -e "/^DEFROUTE/s/^/#/" $NET_CFG_FILE
+  sed -i -e "/^IPV6_DEFROUTE/s/^/#/" /$NET_CFG_FILE
+  sed -i -e "/^PEERDNS/s/^/#/" $NET_CFG_FILE
+  sed -i -e "/^IPV6_PEERDNS/s/^/#/" $NET_CFG_FILE
+  sed -i -e "/^PEERROUTES/s/^/#/" $NET_CFG_FILE
+  sed -i -e "/^IPV6_PEERDNS/s/^/#/" $NET_CFG_FILE
+
+  # Set the device name
+  # Set Netmask
+  grep 'DEVICE=' $NET_CFG_FILE > /dev/null
+  if [ "$?" != "0" ] ; then
+    # The DEVICE is not in the file yet so add it.
+    sed -i "/NAME/a\
+DEVICE=${NET_DEVICE}" $NET_CFG_FILE
+  else
+    # It already had DEVICE specified so replace it.
+    sed -i "/DEVICE/s/=.*$/=${NET_DEVICE}/" $NET_CFG_FILE
+  fi 
+
+  # We want this device to start on boot.
+  sed -i "/ONBOOT[ ]*=/s/^.*$/ONBOOT=yes/" $NET_CFG_FILE
+}
+
+# Setup the resolv.conf for the ext dns.
+# Usage: setup_resolv <dnsIP> <searchDomain>
+setup_resolv () {
+  # We want to have our own name server added to the resolv.conf file.
+  # See if it is already there.
+  grep -e "$1" /etc/resolv.conf > /dev/null
+  if [ "$?" != "0" ] ; then
+    # The server address is not in the file yet so add it.
+    sed -i -e "1i\
+nameserver       $1" /etc/resolv.conf
+  fi
+
+  # We want to search our cloud domain. Add  to the resolv.conf file.
+  # See if it is already there.
+  grep -e "$2" /etc/resolv.conf > /dev/null
+  if [ "$?" != "0" ] ; then
+    # The search domain is not in the file yet so add it.
+    sed -i "1a\
+search      $2" /etc/resolv.conf
+  fi
+
+  # We want to search our cloud domain. Add  to the resolv.conf file.
+  # See if it is already there.
+  grep -e "^domain" /etc/resolv.conf > /dev/null
+  if [ "$?" != "0" ] ; then
+    sed -i "1 i\
+domain      $2" /etc/resolv.conf
+  else
+    # The search domain is not in the file yet so add it.
+    sed -i -e "/^domain/s/domain.*/domain      $2/" /etc/resolv.conf
+  fi
+
+
+}
+
+# Get the IPv4 address if a network device.
+# Usage: VALUE=$(get_device_ipaddr <deviceName>)
+get_device_ipaddr () {
+
+  if [ $# -ne 1 ] ; then 
+    echo "!!!!! Need an <deviceName> argument to ${FUNCNAME[0]}."
+    exit 1
+  fi
+
+  ip -f inet address show dev ${CLOUD_DATA_COMPUTE_DEVICE} | grep -e "inet" | sed -e "s/^.*inet //" -e "s/brd.*$//" -e "s/\/[0-9]*//"
+}

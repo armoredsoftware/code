@@ -1,0 +1,79 @@
+############################################################
+# - Do NOT have the networking node run on the router.
+# - It is OK to have the controler run on the router.
+# - The control and networking functions must NOT be on 
+#   the same host.
+############################################################
+# Used by router and networking nodes.
+CLOUD_EXT_NETMASK=255.255.255.0
+CLOUD_EXT_DOMAIN=ext.armored
+
+# ---------------------------------------------
+# The ethernet device is the ITTC network connected to.
+# This is only valid for the external 'router' host.
+ITTC_NET_DEVICE=em1
+
+# Which ethernet device is the CLOUD external network connect to. This is the
+# network that will be NAT'ed to gain access to the ITTC network.
+# 
+CLOUD_EXT_ROUTER_DEVICE=p6p1
+
+# The IP address for the router node CLOUD_EXT_ROUTER_DEVICE 
+# NOTE: CLOUD_EXT_ROUTER_IPADDR and CLOUD_EXT_CONTROL_IPADDR must be the
+#       same if the control node is to run on the router node.
+CLOUD_EXT_ROUTER_IPADDR=10.100.0.254
+# Value for router node only
+CLOUD_EXT_ROUTER_HOSTNAME=router
+
+# How many compute nodes to setup the router to know about.
+# First address is 10.100.0.1
+# First name is compute1.ext.armored
+CLOUD_NUM_COMPUTE_NODES=1
+
+# ---------------------------------------------
+
+#CLOUD_XEN_SERVER_IPADDR=${CLOUD_EXT_ROUTER_DEVICE}
+
+# ---------------------------------------------
+
+
+# Parameters for the 'control' host when stand alone (not running on the router.)
+#CLOUD_EXT_CONTROL_DEVICE=em1
+#CLOUD_EXT_CONTROL_IPADDR=10.100.0.1
+#CLOUD_EXT_CONTROL_HOSTNAME=control
+
+# Use the following EXT net values if the control node is to also be run on the router.
+CLOUD_EXT_CONTROL_DEVICE=${CLOUD_EXT_ROUTER_DEVICE}
+CLOUD_EXT_CONTROL_IPADDR=${CLOUD_EXT_ROUTER_IPADDR}
+CLOUD_EXT_CONTROL_HOSTNAME=control
+
+CLOUD_DATA_CONTROL_DEVICE=p5p1
+CLOUD_DATA_CONTROL_IPADDR=10.0.0.254
+CLOUD_DATA_CONTROL_HOSTNAME=control
+
+##CLOUD_MGNT_CONTROL_DEVICE=em1
+##CLOUD_MGNT_CONTROL_HOSTNAME=control
+##CLOUD_MGNT_CONTROL_IPADDR=10.100.0.1
+
+# ---------------------------------------------
+
+CLOUD_EXT_NETWORKING_DEVICE=em1
+CLOUD_EXT_NETWORKING_IPADDR=10.100.0.253
+CLOUD_EXT_NETWORKING_HOSTNAME=networking
+
+#CLOUD_MGNT_NETWORKING_IPADDR=10.100.0.1
+#CLOUD_MGNT_NETWORKING_HOSTNAME=networking
+
+CLOUD_DATA_NETWORKING_DEVICE=p5p1
+CLOUD_DATA_NETWORKING_IPADDR=10.0.0.253
+
+# ------------------------------------------
+
+CLOUD_EXT_COMPUTE_DEVICE=em1
+CLOUD_EXT_COMPUTE_IPADDR_PREFIX=10.100.0
+# A number will be added to the CLOUD_EXT_COMPUTE_HOSTNAME_PREFIX to
+# get the compute hostname.
+CLOUD_EXT_COMPUTE_HOSTNAME_PREFIX=compute
+
+CLOUD_DATA_COMPUTE_DEVICE=p5p1
+CLOUD_DATA_COMPUTE_IPADDR_PREFIX=10.0.0
