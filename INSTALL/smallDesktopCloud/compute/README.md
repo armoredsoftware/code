@@ -7,7 +7,7 @@ services.
 
 There has to be at least 1 compute host in the cloud. Although some OpenStack clouds allow a 'control' node to also host a 'compute' node, we setup ArmoredSoftware cloud
 with a dedicated 'control' node. There can be up to
-250 computes host with the networking configuration used in these scripts.
+250 compute hosts with the networking configuration used in these scripts.
 For more compute nodes than 250 the IP addresses for the router, control and
 networking hosts and then netmask and some scripts would have to be modified.
 
@@ -46,31 +46,13 @@ Ask the sysadmins for help doing this the first time.
 
 ## Configure host for cloud network. ##
 
-It is assumed that any host computer has a fresh ITTC Fedora 19 kickstart install. 
-
-- Ensure that the ITTC sysadmins have given you ALL sudo permissions for the host computer.
-- Connect the host computer to the ITTC network and boot.
-- Log into the host. You may want to use SSH for this.
-- If you have not done so already clone the ArmoredSoftware code repository in 
-  your home directory.
-    > cd ~
-    > mkdir armored
-    > cd armored
-    > git clone git@github.com:armoredsoftware/code.git
-    > cd code/INSTALL/smallDesktopCloud/compute
-- If nessary edit the file code/INSTALL/smallDesktopCloud/util/params-network and
-modify the following variables to suite your situtation:
--- CLOUD_EXT_COMPUTE_DEVICE
--- CLOUD_DATA_COMPUTE_DEVICE
-- cd to the 'networking' sub diretory.
-    > cd networking
-- Follow the instructions in the README.md file.
-- Shutdown the host.
-- Connect the host to the External and Private Data network switches of the cloud.
-- Boot up the host.
-- You should be able to ssh to your router and then ssh to your compute node.
+Follow the instructions in ./networking/README.md
 
 ## Configure the host for Xen. ##
 
+TBD
+
 ## Configure the host for OpenStack ##
+
+TBD
 

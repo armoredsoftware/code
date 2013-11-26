@@ -1,5 +1,5 @@
-Armored Software Compute Node NIC Setup scripts
-===============================================
+Armored Software Compute Node NIC Setup
+=======================================
 
 This directory contains the scripts for configuring individual 'compute' node for running on a network connected to a router that is then connected to the Enterprise/ITTC network.
 
@@ -22,8 +22,8 @@ To setup networking:
     > cd code/INSTALL/smallDesktopCloud/compute
 - If nessary edit the file code/INSTALL/smallDesktopCloud/util/params-network and
 modify the following variables to suite your situtation:
--- CLOUD_EXT_COMPUTE_DEVICE
--- CLOUD_DATA_COMPUTE_DEVICE
+ - CLOUD_EXT_COMPUTE_DEVICE
+ - CLOUD_DATA_COMPUTE_DEVICE
 - Do the following command:
     > sudo ./networking.sh <num>
 where <num> is the compute host number for this compute host number greater
