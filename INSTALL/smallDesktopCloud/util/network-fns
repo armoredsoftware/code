@@ -64,7 +64,7 @@ IPADDR=$2" $NET_CFG_FILE
 NETMASK=$3" $NET_CFG_FILE
   else
     # It already had NETMASK specified so replace it.
-    sed -i "/NETMASK[ ]*=/s/^.*$/NETMASK=$2/" $NET_CFG_FILE
+    sed -i "/NETMASK[ ]*=/s/^.*$/NETMASK=$3/" $NET_CFG_FILE
   fi 
 
   if [ $# -eq 4 ] ; then
@@ -114,6 +114,15 @@ DEVICE=${NET_DEVICE}" $NET_CFG_FILE
 
   # We want this device to start on boot.
   sed -i "/ONBOOT[ ]*=/s/^.*$/ONBOOT=yes/" $NET_CFG_FILE
+
+  # We are not networkmanager controlled.
+  grep -e '^NM_CONTROLLED=' $NET_CFG_FILE > /dev/null
+  if [ $? -eq 0 ] ; then
+    # It already had DEVICE specified so replace it.
+    sed -i "/NM_CONTROLLED/s/=.*$/=no/" $NET_CFG_FILE
+  fi 
+
+
 }
 
 # Setup the resolv.conf for the ext dns.

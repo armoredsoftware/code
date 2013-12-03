@@ -69,11 +69,17 @@ CLOUD_DATA_NETWORKING_IPADDR=10.0.0.253
 
 # ------------------------------------------
 
-CLOUD_EXT_COMPUTE_DEVICE=em1
+# For RHEL we use the ethX devices. For Feorda 19+ we use the
+# pXpY devices.
+#CLOUD_EXT_COMPUTE_DEVICE=em1
+CLOUD_EXT_COMPUTE_DEVICE=eth0
 CLOUD_EXT_COMPUTE_IPADDR_PREFIX=10.100.0
 # A number will be added to the CLOUD_EXT_COMPUTE_HOSTNAME_PREFIX to
 # get the compute hostname.
 CLOUD_EXT_COMPUTE_HOSTNAME_PREFIX=compute
 
-CLOUD_DATA_COMPUTE_DEVICE=p5p1
+# For RHEL we use the ethX devices. For Feorda 19+ we use the
+# pXpY devices.
+#CLOUD_DATA_COMPUTE_DEVICE=p5p1
+CLOUD_DATA_COMPUTE_DEVICE=eth1
 CLOUD_DATA_COMPUTE_IPADDR_PREFIX=10.0.0
