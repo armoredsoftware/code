@@ -1,7 +1,7 @@
 Armored Software Compute Node NIC Setup
 =======================================
 
-This directory contains the scripts for configuring individual 'compute' node
+This directory contains the scripts for configuring an individual 'compute' node
 for running on a network connected to a router that is then connected to the
 Enterprise network.
 

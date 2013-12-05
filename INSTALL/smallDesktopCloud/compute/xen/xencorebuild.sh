@@ -14,16 +14,24 @@ UTIL_DIR=${UTIL_DIR:-${TOP_LEVEL}/util}
 # We have to be the root user.
 check_root_user
 
+SHELLDIR=`pwd`
+XENSERVER_SPEC_PATCHFILE=${SHELLDIR}/xenserver-install-wizard_SPECfix.patch
+BUILDDIR=/xenserver-core-build
+
+
 # Puppet must be disabled to prevent it from over writing the passwd and group
 # files since the mock user will be added and 
 echo "# !!!! Shutdown puppet."
-which systemctl > /dev/null
+which systemctl 2> /dev/null
 if [ $? -eq 0 ] ; then
   systemctl stop puppetagent.service
   systemctl disable puppetagent.service
 else
-  service puppet stop
-  chkconfig puppet off
+  service puppet status
+  if [ $? -eq 0 ] ; then
+    service puppet stop
+   chkconfig puppet off
+  fi
 fi
 
 
@@ -33,39 +41,41 @@ yum install -y mock redhat-lsb-core || exit 1
 echo "# Adding mock group to user '${SUDO_USER}'"
 usermod -G mock ${SUDO_USER}
 
+
 echo "# Creating directory /xenserver_core for the git clone."
-if [ ! -f /xenserver-core-build ] ; then
-  mkdir /xenserver-core-build
-  chmod a+xwr /xenserver-core-build
+if [ ! -f ${BUILDDIR} ] ; then
+  mkdir ${BUILDDIR}
+  chmod a+xwr ${BUILDDIR}
 fi
 
 # Make sure git is installed.
 yum -y install git
 
-cd /xenserver-core-build
+
+cd ${BUILDDIR}
 echo "# Doing git clone."
-sudo -u ${SUDO_USER} git clone git://github.com/xenserver/xenserver-core.git || exit 1
+sudo -u ${SUDO_USER} git clone git://github.com/xenserver/xenserver-core.git 
 
-cd ./xenserver-core
 
-grep -e "RedHatEnterpriseServer" configure.sh > /dev/null
-if [ $? -ne 0 ] ; then
-echo "# Add RedHatEnterpriseServer to the rpm configuration."
-  sed -i -e "/Fedora/s/]/-o `lsb_release -si` == \"RedHatEnterpriseServer\" ]/" configure.sh
-fi
+cd ${BUILDDIR}/xenserver-core
 
-grep -e "red hat enterprise linux server" specdep.py > /dev/null
-if [ $? -ne 0 ] ; then
-echo "# Add \"red hat enterprise server\" to rpm distribution types."
-  sed -i -e "/rhel_like =/s/]/, \"red hat enterprise linux server\"]/" specdep.py
-fi
+echo "# Modify the xenserver-install-wizard SPEC file to use our patch."
+cd ${BUILDDIR}/xenserver-core/SPECS
+patch -p1 xenserver-install-wizard.spec ${SHELLDIR}/xenserver-install-wizard-0.2.28.spec.patch
+echo "# Apply the patch for the xenserver-install-wizard"
+cp ${SHELLDIR}/xenserver-install-wizard-0.2.28.patch ${BUILDDIR}/xenserver-core/SOURCES
+cd ${BUILDDIR}/xenserver-core
+
 
 sudo -u ${SUDO_USER} ./configure.sh || exit 1
+
 sudo -u ${SUDO_USER}  make  || exit 1
 
 cd ..
-sudo -u ${SUDO_USER} tar zcf xenserver-core-latest.tgz xenserver-core/RPMS xenserver-core/scripts xenserver-core/deps xenserver-core/Makefile  xenserver-core/SPECS xenserver-core/xapi.repo
+XEN_TARBALL=xenserver-core-latest.tgz
+sudo -u ${SUDO_USER} tar zcf ${XEN_TARBALL} xenserver-core/RPMS xenserver-core/scripts xenserver-core/deps xenserver-core/Makefile  xenserver-core/SPECS xenserver-core/xapi.repo
 
 echo "#############################################################"
-echo "The INSTALLATION tarball is at $PWD/xenserver-core-built.tgz. "
+echo "The INSTALLATION tarball is at ${PWD}/${XEN_TARBALL}. "
+echo "Move it to a location that you an retrieve it from for furture use."
 echo "#############################################################"

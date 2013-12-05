@@ -48,10 +48,13 @@ source_file ${UTIL_DIR}/params-network
 
 echo "# Shutdown the networkmanager service."
 # Make sure the NetworkManger is disabled.
-which systemctl
+which systemctl 2> /dev/null
 if [ $? -ne 0 ] ; then
-  chkconfig NetworkManager off
-  service NetworkManager stop
+  service NetworkManager status
+  if [ $? -eq 0 ] ; then
+    chkconfig NetworkManager off
+    service NetworkManager stop
+  fi
 else
   systemctl stop  NetworkManager.service
   systemctl disable NetworkManager.service
@@ -70,11 +73,14 @@ setup_static_device_networking CLOUD_EXT_COMPUTE_DEVICE ${COMPUTE_EXT_IPADDR} ${
 setup_static_device_networking CLOUD_DATA_COMPUTE_DEVICE ${COMPUTE_DATA_IPADDR} ${CLOUD_EXT_NETMASK}
 
 # Puppet must be disabled to prevent it from over writing sudoers are other files.
-echo "Shutdown puppet."
-which systemctl
+echo "# Shutdown puppet."
+which systemctl 2> /dev/null
 if [ $? -ne 0 ] ; then
-  chkconfig puppet off
-  service puppet stop
+  service puppet status > /dev/null
+  if [ $? -eq 0 ] ; then
+    chkconfig puppet off
+    service puppet stop
+  fi
 else
   systemctl stop puppetagent.service
   systemctl disable puppetagent.service
@@ -94,10 +100,18 @@ add_sudoer_host ${SUDO_USER} ${COMPUTE_HOSTNAME}
 
 # Change the hostname to the compute node hostname
 echo "# Changing host name to '${COMPUTE_HOSTNAME}.' "
-which hostnamectl > /dev/null
+which hostnamectl 2> /dev/null
 if [ $? -ne 0 ] ; then 
   hostname ${COMPUTE_HOSTNAME}.${CLOUD_EXT_DOMAIN}
   sed -i -e "/^HOSTNAME/s/=.*/=${COMPUTE_HOSTNAME}.${CLOUD_EXT_DOMAIN}/" /etc/sysconfig/network
 else
   hostnamectl --static set-hostname ${COMPUTE_HOSTNAME}
 fi
+
+echo "##############################################################"
+echo " Shut down the computer:"
+echo "     > sudo shutdown now"
+echo " Move the network cable from"
+echo " the ITTC switch to the cloud external/managed network switch."
+echo " Then boot the computer."
+echo "##############################################################"

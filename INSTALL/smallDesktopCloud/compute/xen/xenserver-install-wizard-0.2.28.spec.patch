@@ -1,0 +1,19 @@
+diff -Naur SPECS/xenserver-install-wizard.spec SPECS-new/xenserver-install-wizard.spec
+--- SPECS/xenserver-install-wizard.spec	2013-12-05 11:19:36.821000220 -0600
++++ SPECS-new/xenserver-install-wizard.spec	2013-12-05 11:10:47.839000225 -0600
+@@ -8,6 +8,7 @@
+ License: LGPL+linking exception
+ URL:  http://github.com/djs55/xenserver-install-wizard
+ Source0: https://github.com/djs55/%{name}/archive/%{version}/%{name}-%{version}.tar.gz
++Patch0: xenserver-install-wizard-0.2.28.patch
+ BuildRoot: %{_tmppath}/%{name}-%{version}-root
+ Requires: python newt xapi-python-devel python-argparse
+ 
+@@ -16,6 +17,7 @@
+ 
+ %prep 
+ %setup -q
++%patch0 -p1
+ 
+ %build
+ 

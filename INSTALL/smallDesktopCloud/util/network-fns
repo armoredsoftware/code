@@ -45,7 +45,9 @@ setup_static_device_networking () {
   # Setup the cloud external network device.
   NET_CFG_FILE=/etc/sysconfig/network-scripts/ifcfg-${NET_DEVICE}
   echo "# Modifying '${NET_CFG_FILE}' configuration file."
-  sed -i -e /BOOTPROTO/s/=.*$/=static/  $NET_CFG_FILE
+  # Note: 'static' is deprecated so we use 'none'.
+#  sed -i -e "/BOOTPROTO/s/=.*$/=\"none\"/"  $NET_CFG_FILE
+  sed -i -e "/BOOTPROTO/s/=.*$/=\"static\"/"  $NET_CFG_FILE
   # Set IP Address
   grep -e "IPADDR[ ]*=" ${NET_CFG_FILE} > /dev/null
   if [ "$?" != "0" ] ; then
