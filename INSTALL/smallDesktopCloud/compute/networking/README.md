@@ -30,30 +30,30 @@ To setup networking:
 - If you have not done so already clone the ArmoredSoftware code repository in 
   your home directory.
 
-    > cd ~
-    > mkdir armored
-    > cd armored
-    > git clone git@github.com:armoredsoftware/code.git
-    > cd code/INSTALL/smallDesktopCloud/compute
+    $ cd ~
+    $ mkdir armored
+    $ cd armored
+    $ git clone git@github.com:armoredsoftware/code.git
+    $ cd code/INSTALL/smallDesktopCloud/compute
 - If nessary edit the file code/INSTALL/smallDesktopCloud/util/params-network and
 modify the following variables to suite your situtation:
  - CLOUD_EXT_COMPUTE_DEVICE
  - CLOUD_DATA_COMPUTE_DEVICE
 - Do the following command:
 
-    > sudo ./networking.sh <num>
+    $ sudo ./networking.sh <num>
 where <num> is the compute host number for this compute host number greater
 than 1 but less than 250. No checks are performed to make sure that the
 number has not already been used. 
 - If there are no errors in the network setup then:
 
-    > sudo shutdown now
+    $ sudo shutdown now
 - Connect the two host ports to the two cloud switchs. Typically the motherboard 
 NIC is connected to the External/Management network switch. The PCI network card is connect to the Private/Data network switch.
 - Boot the new computer host.
 - Proceed to the Xen setup.
 
-    > cd ../xen
+    $ cd ../xen
 - Follow the instructions in README.md.
 
 
