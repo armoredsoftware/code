@@ -1,0 +1,12 @@
+diff -Nuar xenserver-install-wizard-0.2.28/network.py xenserver-install-wizard-0.2.28new/network.py
+--- xenserver-install-wizard-0.2.28/network.py	2013-12-04 07:37:12.000000000 -0600
++++ xenserver-install-wizard-0.2.28new/network.py	2013-12-06 12:57:47.055206815 -0600
+@@ -66,7 +66,7 @@
+ 			if mode == "DHCP":
+ 				print >> sys.stderr, "Configuring %s with DHCP" % device
+ 			else:
+-				print >> sys.stderr, "Configuring %s with static IP %s netmask %s gateway %s DNS %s" % (device, mode, address, netmask, gateway, dns)
++				print >> sys.stderr, "Configuring %s with static IP %s netmask %s gateway %s DNS %s" % (device, address, netmask, gateway, dns)
+ 			x.xenapi.PIF.reconfigure_ip(config["device_to_pif"][device], mode, address, netmask, gateway, dns)
+ 		if "management" in config:
+ 			print >> sys.stderr, "Configuring %s as the management interface" % config["management"]

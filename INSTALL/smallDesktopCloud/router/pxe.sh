@@ -16,12 +16,13 @@ UTIL_DIR=${TOP_LEVEL}/util
 # Are we the root user?
 check_root_user
 
+# Remember our current directory.
+SHELLDIR=`pwd`
+
 echo "# Setup the PXE server."
 
 yum install syslinux tftp tftp-server -y || exit 1
 
-systemctl enable xinetd.service
-systemctl restart xinetd.service
 
 SYSLINUX_DIR=/usr/share/syslinux
 TFTPBOOT_DIR=/var/lib/tftpboot
@@ -59,14 +60,19 @@ label 2
    localboot
 EOF
 
-cat > /etc/dnsmasq.d/pxe.d <<EOF
-dhcp-boot=pxelinux.0,${CLOUD_EXT_ROUTER_HOSTNAME}.${CLOUD_EXT_DOMAIN},${CLOUD_EXT_ROUTER_IPADDR}
-EOF
+echo "# Enablethe TFTP service"
+sed -i -e "/disable/s/=.*/= no/" /etc/xinetd.d/tftp
 
+cd ${SHELLDIR}
+echo "# Put the PXE values need for dnsmasq in its config directory."
+sed -e "s/CLOUD_EXT_ROUTER_HOSTNAME/$CLOUD_EXT_ROUTER_HOSTNAME}/" -e "s/CLOUD_EXT_DOMAIN/${CLOUD_EXT_DOMAIN}/" -e "s/CLOUD_EXT_ROUTER_IPADDR/$CLOUD_EXT_ROUTER_IPADDR}/" ./pxe.d > /etc/dnsmasq.d/pxe.d 
 
 echo "# Setup the http service."
 
 yum -y install httpd || exit 1 
+
+systemctl enable xinetd.service
+systemctl restart xinetd.service
 
 systemctl enable httpd.service
 systemctl restart httpd.service

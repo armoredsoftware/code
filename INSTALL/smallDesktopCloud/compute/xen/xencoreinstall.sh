@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# install the xenserver core
+# Install the xenserver core
 # 
 # For running without openstack: images, by default, are placed
 # in /usr/share/xapi/images.

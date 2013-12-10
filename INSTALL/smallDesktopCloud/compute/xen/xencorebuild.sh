@@ -64,6 +64,7 @@ cd ${BUILDDIR}/xenserver-core/SPECS
 patch -p1 xenserver-install-wizard.spec ${SHELLDIR}/xenserver-install-wizard-0.2.28.spec.patch
 echo "# Apply the patch for the xenserver-install-wizard"
 cp ${SHELLDIR}/xenserver-install-wizard-0.2.28.patch ${BUILDDIR}/xenserver-core/SOURCES
+cp ${SHELLDIR}/xenserver-install-wizard-0.2.28.patch2 ${BUILDDIR}/xenserver-core/SOURCES
 cd ${BUILDDIR}/xenserver-core
 
 
