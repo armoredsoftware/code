@@ -1,6 +1,6 @@
-diff -Naur xenserver-install-wizard-0.2.28/networkscripts.py xenserver-install-wizard-0.2.28mod/networkscripts.py
+diff -Nuar xenserver-install-wizard-0.2.28/networkscripts.py xenserver-install-wizard-0.2.28new/networkscripts.py
 --- xenserver-install-wizard-0.2.28/networkscripts.py	2013-12-04 07:37:12.000000000 -0600
-+++ xenserver-install-wizard-0.2.28mod/networkscripts.py	2013-12-05 10:28:36.870000194 -0600
++++ xenserver-install-wizard-0.2.28new/networkscripts.py	2013-12-05 15:23:37.754389438 -0600
 @@ -57,12 +57,17 @@
  
  			if "BOOTPROTO" in sysconfig and sysconfig["BOOTPROTO"] == "dhcp":
@@ -11,12 +11,12 @@ diff -Naur xenserver-install-wizard-0.2.28/networkscripts.py xenserver-install-w
 +				if "IPADDR" in sysconfig and "NETMASK" in sysconfig:
  					ipaddr = sysconfig["IPADDR"]
 -					network = sysconfig["NETWORK"]
-+                                        if "GATEWAY" in sysconfig:
-+                                                gateway = sysconfig["GATEWAY"]
-+                                        elif "NETWORK" in sysconfig:
-+                                                gateway = sysconfig["NETWORK"]
-+                                        else:
-+                                                gateway = ""
++					if "GATEWAY" in sysconfig:
++						gateway = sysconfig["GATEWAY"]
++					elif "NETWORK" in sysconfig:
++						gateway = sysconfig["NETWORK"]
++					else:
++						gateway = ""
  					netmask = sysconfig["NETMASK"]
 -					interfaces_to_reconfigure[d] = ("Static", ipaddr, netmask, network, "")
 +					interfaces_to_reconfigure[d] = ("Static", ipaddr, netmask, gateway, "")

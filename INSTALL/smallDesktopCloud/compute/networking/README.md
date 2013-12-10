@@ -52,7 +52,7 @@ number has not already been used.
 - If there are no errors in the network setup then:
 
 ```
-    > sudo shutdown now
+> sudo shutdown now
 ```
 - Connect the two host ports to the two cloud switchs. Typically the motherboard 
 NIC is connected to the External/Management network switch. The PCI network card is connect to the Private/Data network switch.

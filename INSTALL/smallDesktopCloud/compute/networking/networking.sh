@@ -110,7 +110,7 @@ fi
 
 echo "##############################################################"
 echo " Shut down the computer:"
-echo "     > sudo shutdown now"
+echo "     > sudo shutdown -P now"
 echo " Move the network cable from"
 echo " the ITTC switch to the cloud external/managed network switch."
 echo " Then boot the computer."

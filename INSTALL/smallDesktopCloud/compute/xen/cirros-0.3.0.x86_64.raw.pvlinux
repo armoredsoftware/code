@@ -1,0 +1,66 @@
+# =====================================================================
+# xl configuration for the CirrOS 0.3.0 ext3 file system image.
+# This is for para virtualized machine.
+# =====================================================================
+# This config expects the raw disk image file to be at:
+# /xenImages/cirros-0.3.0-x86_64-rootfs.img
+# You can obtain the image with:
+# > sudo mkdir /xenImages
+# > cd /xenImages 
+# > sudo wget https://launchpad.net/cirros/trunk/0.3.0/+download/cirros-0.3.0-x86_64-rootfs.img.gz
+
+# Guest name
+name = "CirrOSraw_pv"
+
+# 128-bit UUID for the domain as a hexadecimal number.
+# Use "uuidgen" to generate one if required.
+# The default behavior is to generate a new UUID each time the guest is started.
+#uuid = "XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
+
+# Enable Microsoft Hyper-V compatibile paravirtualisation /
+# enlightenment interfaces. Turning this on can improve Windows guest
+# performance and is therefore recommended
+#viridian = 1
+
+# Needed for a para virtualized kernel load.
+bootloader = "pygrub"
+
+# Kernel image to boot.
+#kernel = "/boot/vmlinuz"
+#
+
+# Ramdisk
+# ramdisk = "/boot/initrd.gz"
+
+# Kernel command line options
+#extra = "root=/dev/xvda1"
+
+# Initial memory allocation (MB)
+memory = 125
+
+# Maximum memory (MB)
+# If this is greater than `memory' then the slack will start ballooned
+# (this assumes guest kernel support for ballooning)
+#maxmem = 512
+
+# Number of VCPUS
+#vcpus = 1
+
+# Network devices
+# A list of 'vifspec' entries as described in
+# docs/misc/xl-network-configuration.markdown
+#vif = [ 'type=ioemu, bridge=xenbr0' ]
+# Use the default network device.
+vif = [ '' ]
+
+# Disk Devices
+# A list of `diskspec' entries as described in
+# docs/misc/xl-disk-configuration.txt
+disk = [ '/xenImages/cirros-0.3.0-x86_64-rootfs.img,raw,hda,rw' ]
+
+# Guest VGA console configuration, either SDL or VNC
+sdl = 0
+vnc = 0
+
+# boot from hard disc.
+boot='c'

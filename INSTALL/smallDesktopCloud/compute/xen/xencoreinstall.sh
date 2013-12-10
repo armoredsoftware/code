@@ -56,7 +56,11 @@ if [ $# -eq 1 ] ; then
   tar -C ${BUILDDIR} -zxf $1 
 else
   if [ -f ${BUILDDIR}/xenserver-core-latest.tgz ] ; then
-      tar -C ${BUILDDIR} -zxf /xenserver-core-latest.tgz
+    if [ -f ${BUILDDIR}/xenserver-core ] ; then
+      rm -rf ${BUILDDIR}/xenserver-core
+    fi
+    cd ${BUILDDIR}
+    tar -zxf ${BUILDDIR}/xenserver-core-latest.tgz
   else
     echo "!!!! Could not find xenserver-core RPM tarball."
     echo "Give it as the first argument to this script."
@@ -64,7 +68,6 @@ else
   fi
 fi
 
-exit 0
 
 cd ${BUILDDIR}/xenserver-core
 . scripts/rpm/install.sh
