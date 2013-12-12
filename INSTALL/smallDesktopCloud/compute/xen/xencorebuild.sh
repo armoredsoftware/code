@@ -34,7 +34,20 @@ else
   fi
 fi
 
+# For CentOS we need the ELEL repositories.
+if [ "$(lsb_release -is)" == "CentOS" ] ; then
+  OLDPWD=`pwd`
+  cd /tmp
+  wget http://dl.fedoraproject.org/pub/epel/6/x86_64/epel-release-6-8.noarch.rpm
+  rpm -Uvh epel-release-6*.rpm
 
+  #wget http://rpms.famillecollet.com/enterprise/remi-release-6.rpm
+  #rpm -Uvh remi-release-6*.rpm 
+
+  cd ${OLDPWD}
+fi
+
+yum install -y createrepo || exit 1
 yum install -y mock redhat-lsb-core || exit 1
 
 # Mock will not run as super user.
@@ -54,23 +67,26 @@ yum -y install git
 
 cd ${BUILDDIR}
 echo "# Doing git clone."
-sudo -u ${SUDO_USER} git clone git://github.com/xenserver/xenserver-core.git 
+sudo -u ${SUDO_USER} git clone https://github.com/xenserver/xenserver-core.git
 
 
 cd ${BUILDDIR}/xenserver-core
 
 echo "# Modify the xenserver-install-wizard SPEC file to use our patch."
 cd ${BUILDDIR}/xenserver-core/SPECS
-patch -p1 xenserver-install-wizard.spec ${SHELLDIR}/xenserver-install-wizard-0.2.28.spec.patch
+sudo -u ${SUDO_USER} patch -p1 xenserver-install-wizard.spec ${SHELLDIR}/xenserver-install-wizard-0.2.28.spec.patch
 echo "# Apply the patch for the xenserver-install-wizard"
-cp ${SHELLDIR}/xenserver-install-wizard-0.2.28.patch ${BUILDDIR}/xenserver-core/SOURCES
-cp ${SHELLDIR}/xenserver-install-wizard-0.2.28.patch2 ${BUILDDIR}/xenserver-core/SOURCES
+sudo -u ${SUDO_USER} cp ${SHELLDIR}/xenserver-install-wizard-0.2.28.patch ${BUILDDIR}/xenserver-core/SOURCES
+sudo -u ${SUDO_USER} cp ${SHELLDIR}/xenserver-install-wizard-0.2.28.patch2 ${BUILDDIR}/xenserver-core/SOURCES
 cd ${BUILDDIR}/xenserver-core
 
 
 sudo -u ${SUDO_USER} ./configure.sh || exit 1
 
-sudo -u ${SUDO_USER}  make  || exit 1
+# In order for mock to work the version in /usr/bin must be found before the
+# one in /usr/sbin
+export PATH=/usr/bin:${PATH}
+sudo -u ${SUDO_USER} PATH=${PATH} make  || exit 1
 
 cd ..
 XEN_TARBALL=xenserver-core-latest.tgz
