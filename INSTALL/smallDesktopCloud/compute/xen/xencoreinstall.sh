@@ -34,43 +34,45 @@ else
 fi
 
 # We need the mock user and utility to do the install.
-yum install -y mock redhat-lsb-core || exit 1
+#yum install -y mock redhat-lsb-core || exit 1
 
 # Mock will not run as super user.
-echo "# Adding mock group to user '${SUDO_USER}'"
-usermod -G mock ${SUDO_USER}
+#echo "# Adding mock group to user '${SUDO_USER}'"
+#usermod -G mock ${SUDO_USER}
 
-echo "# Creating directory /xenserver_core for tar ball"
-if [ ! -f ${BUILDDIR} ] ; then
-  mkdir ${BUILDDIR}
-  chmod a+xwr ${BUILDDIR}
-fi
+#echo "# Creating directory /xenserver_core for tar ball"
+#if [ ! -f ${BUILDDIR} ] ; then
+#  mkdir ${BUILDDIR}
+#  chmod a+xwr ${BUILDDIR}
+#fi
 
 # We need to get the rpm tarball from somewhere.
-if [ $# -eq 1 ] ; then
-  # Remove the old dir
-  if [ -f ${BUILDDIR}/xenserver-core ] ; then
-    rm -rf ${BUILDDIR}/xenserver-core
-  fi
-  # Unpack the tarball.
-  tar -C ${BUILDDIR} -zxf $1 
-else
-  if [ -f ${BUILDDIR}/xenserver-core-latest.tgz ] ; then
-    if [ -f ${BUILDDIR}/xenserver-core ] ; then
-      rm -rf ${BUILDDIR}/xenserver-core
-    fi
-    cd ${BUILDDIR}
-    tar -zxf ${BUILDDIR}/xenserver-core-latest.tgz
-  else
-    echo "!!!! Could not find xenserver-core RPM tarball."
-    echo "Give it as the first argument to this script."
-    exit 1
-  fi
-fi
+#if [ $# -eq 1 ] ; then
+#  # Remove the old dir
+#  if [ -f ${BUILDDIR}/xenserver-core ] ; then
+#    rm -rf ${BUILDDIR}/xenserver-core
+#  fi
+#  # Unpack the tarball.
+#  tar -C ${BUILDDIR} -zxf $1 
+#else
+#  if [ -f ${BUILDDIR}/xenserver-core-latest.tgz ] ; then
+#    if [ -f ${BUILDDIR}/xenserver-core ] ; then
+#      rm -rf ${BUILDDIR}/xenserver-core
+#    fi
+#    cd ${BUILDDIR}
+#    tar -zxf ${BUILDDIR}/xenserver-core-latest.tgz
+#  else
+#    echo "!!!! Could not find xenserver-core RPM tarball."
+#    echo "Give it as the first argument to this script."
+#    exit 1
+#  fi
+#fi
 
 
-cd ${BUILDDIR}/xenserver-core
-. scripts/rpm/install.sh
+#cd ${BUILDDIR}/xenserver-core
+#. scripts/rpm/install.sh
+
+yum install -y xenserver-core
 
 echo "#Setting up ld.so for libvhd.so.0"
 touch /etc/ld.so.conf.d/blktap-x86_64.conf
