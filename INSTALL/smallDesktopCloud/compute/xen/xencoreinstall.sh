@@ -78,10 +78,13 @@ cd /tmp
 wget http://router.ext.armored/armoredrepo/CentOS6.5/xen-c6-tweaked.repo
 wget http://router.ext.armored/armoredrepo/CentOS6.5/epel.repo
 wget http://router.ext.armored/armoredrepo/CentOS6.5/ArmoredConfig.repo
+wget http://router.ext.armored/armoredrepo/CentOS6.5/RPM-GPG-KEY-EPEL-6
 
 install -m 0644 xen-c6-tweaked.repo /etc/yum.repos.d/xen-c6-tweaked.repo
 install -m 0644 epel.repo /etc/yum.repos.d/epel.repo
 install -m 0644 ArmoredConfig.repo /etc/yum.repos.d/ArmoredConfig.repo
+
+install -m 0644 RPM-GPG-KEY-EPEL-6 /etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-6
 
 
 yum install -y xenserver-core
