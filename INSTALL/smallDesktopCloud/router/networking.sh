@@ -122,14 +122,9 @@ fi
 echo "# Create file /etc/hosts-armored"
 rm -f /etc/hosts-armored
 # If the ip addres for router and control are the same....
-if [ "${CLOUD_EXT_ROUTER_IPADDR}" == "${CLOUD_EXT_CONTROL_IPADDR}" ] ; then 
-  # Add the controller and make the router the alias.
-  echo "${CLOUD_EXT_CONTROL_IPADDR}     ${CLOUD_EXT_CONTROL_HOSTNAME}.${CLOUD_EXT_DOMAIN}     ${CLOUD_EXT_CONTROL_HOSTNAME},${CLOUD_EXT_ROUTER_HOSTNAME}" >> /etc/hosts-armored 
-else
-  # Add the controller and  router separately.
-  echo "${CLOUD_EXT_ROUTER_IPADDR}     ${CLOUD_EXT_ROUTER_HOSTNAME}.${CLOUD_EXT_DOMAIN}     ${CLOUD_EXT_ROUTER_HOSTNAME}" >> /etc/hosts-armored 
-  echo "${CLOUD_EXT_CONTROL_IPADDR}     ${CLOUD_EXT_CONTROL_HOSTNAME}.${CLOUD_EXT_DOMAIN}     ${CLOUD_EXT_CONTROL_HOSTNAME}" >> /etc/hosts-armored 
-fi
+# Add the controller and  router separately.
+echo "${CLOUD_EXT_ROUTER_IPADDR}     ${CLOUD_EXT_ROUTER_HOSTNAME}.${CLOUD_EXT_DOMAIN}     ${CLOUD_EXT_ROUTER_HOSTNAME}" >> /etc/hosts-armored 
+echo "${CLOUD_EXT_CONTROL_IPADDR}     ${CLOUD_EXT_CONTROL_HOSTNAME}.${CLOUD_EXT_DOMAIN}     ${CLOUD_EXT_CONTROL_HOSTNAME}" >> /etc/hosts-armored 
 # Add networking ext address.
 echo "${CLOUD_EXT_NETWORKING_IPADDR}     ${CLOUD_EXT_NETWORKING_HOSTNAME}.${CLOUD_EXT_DOMAIN}     ${CLOUD_EXT_NETWORKING_HOSTNAME}" >> /etc/hosts-armored
 # Add addresses for the compute hosts.

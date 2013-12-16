@@ -13,5 +13,5 @@ label 2
 label 3
    menu label CentOS 6.5x86_64 Compute Dom0 (NODEID=0, Tab to Change)
    kernel images/CentOS6.5/x86_64/vmlinuz
-   append initrd=images/CentOS6.5/x86_64/initrd.img ks=http://10.100.0.254/kickstart/centos65_dom0.ks repo=http://kickstart.ittc.ku.edu/mirror/centos/6.5/os/x86_64 console=tty0 load_ramdisk=1 ksdevice=eth0 NODEID=0
+   append initrd=images/CentOS6.5/x86_64/initrd.img ks=http://router.ext.armored/kickstart/centos65_dom0.ks repo=http://kickstart.ittc.ku.edu/mirror/centos/6.5/os/x86_64 console=tty0 load_ramdisk=1 ksdevice=eth0 NODEID=0
  

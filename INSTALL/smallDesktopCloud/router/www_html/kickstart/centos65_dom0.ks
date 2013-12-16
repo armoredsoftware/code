@@ -63,15 +63,17 @@ if [ ${NODEID} -eq 0 ] ; then
   halt
 fi
 
-echo "network --onboot yes --device eth0 --bootproto static --ip 10.100.0.${NODEID} --netmask 255.255.255.0 --gateway 10.100.0.254 --noipv6 --nameserver 10.100.0.254 --hostname compute${NODEID}.ext.armored" | tee -a /tmp/part.inc
+echo "network --onboot yes --device eth0 --bootproto static --ip @CLOUD_EXT_COMPUTE_IPADDR_PREFIX@.${NODEID} --netmask @CLOUD_EXT_NETMASK@ --gateway @CLOUD_EXT_ROUTER_IPADDR@ --noipv6 --nameserver @CLOUD_EXT_ROUTER_IPADDR@ --hostname compute${NODEID}.ext.armored" | tee -a /tmp/part.inc
 
-echo "network --onboot yes --device eth1 --bootproto static --ip 10.0.0.${NODEID} --netmask 255.255.255.0 --noipv6" | tee -a /tmp/part.inc
+echo "network --onboot yes --device eth1 --bootproto static --ip @CLOUD_DATA_COMPUTE_IPADDR_PREFIX@.${NODEID} --netmask @CLOUD_EXT_NETMASK@ --noipv6" | tee -a /tmp/part.inc
 
 
 %end
 
 %post #####################################################
 
+# Get most recent RPM updates.
+yum -y update
 
 # Add the armored user.
 groupadd --gid 9100 armored
@@ -107,5 +109,6 @@ EOF
 
 chmod a+x ${GIT_CHANGE_USER}
 chown armored ${GIT_CHANGE_USER}
+
 
 %end

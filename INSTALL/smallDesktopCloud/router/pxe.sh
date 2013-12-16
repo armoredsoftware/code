@@ -28,12 +28,14 @@ SYSLINUX_DIR=/usr/share/syslinux
 TFTPBOOT_DIR=/var/lib/tftpboot
 WWW_DIR=/var/www/html
 
-echo "# Extract the TFTPBOOT files."
-cd ${TFTPBOOT_DIR}
-tar -zxf ${SHELLDIR}/tftpboot.tgz
+CURSHELLDIR=`pwd`
 
-#cp ${SYSLINUX_DIR}/menu.c32 ${TFTPBOOT_DIR}
-#cp ${SYSLINUX_DIR}/pxelinux.0 ${TFTPBOOT_DIR}
+echo "# Extract the TFTPBOOT files."
+cd tftpboot
+cp -r * ${TFTPBOOT_DIR}
+#cd ${TFTPBOOT_DIR}
+#tar -zxf ${SHELLDIR}/tftpboot.tgz
+
 
 echo "# Enablethe TFTP service"
 sed -i -e "/disable/s/=.*/= no/" /etc/xinetd.d/tftp
@@ -46,9 +48,24 @@ echo "# Setup the http service."
 
 yum -y install httpd || exit 1 
 
-echo "# copy the kickstart files to the http service."
+echo "# copy the kickstart and yum repository files to the http service."
+cd www_html
+cp -r * ${WWW_DIR}
+#cd ${WWW_DIR}
+#tar -zxf ${SHELLDIR}/www_html.tgz
+
+# The kick start files have some network variables in them that need to be
+# replaced with the real thing.
 cd ${WWW_DIR}
-tar -zxf ${SHELLDIR}/www_html.tgz
+KSFILES=`find . -name \*.ks`
+echo "# Editing KSFILES=${KSFILES} for network parameters."
+for ksFile in ${KSFILES} ; do 
+  sed -i -e "s/@CLOUD_EXT_ROUTER_IPADDR@/${CLOUD_EXT_ROUTER_IPADDR}/g" ${ksFile}
+  sed -i -e "s/@CLOUD_EXT_COMPUTE_IPADDR_PREFIX@/${CLOUD_EXT_COMPUTE_IPADDR_PREFIX}/g" ${ksFile}
+  sed -i -e "s/@CLOUD_DATA_COMPUTE_IPADDR_PREFIX@/${CLOUD_DATA_COMPUTE_IPADDR_PREFIX}/g" ${ksFile}
+  sed -i -e "s/@CLOUD_EXT_NETMASK@/${CLOUD_EXT_NETMASK}/g" ${ksFile}
+done
+
 
 systemctl enable xinetd.service
 systemctl restart xinetd.service
