@@ -41,7 +41,8 @@ if [ ! -f ${BUILDDIR} ] ; then
   chmod a+xwr ${BUILDDIR}
 fi
 
- We need to get the rpm tarball from somewhere.
+# We need to get the rpm tarball from somewhere.
+echo "# Untar the xen server core tarball."
 if [ $# -eq 1 ] ; then
   # Remove the old dir
   if [ -f ${BUILDDIR}/xenserver-core ] ; then
@@ -63,9 +64,15 @@ else
   fi
 fi
 
+echo "# setup the xen server core yum repo."
 cd ${BUILDDIR}/xenserver-core/scripts/rpm/
 cp xen-c6-tweaked.repo ${REPO_CENTOS65}/xen-c6-tweaked.repo
+cp epel.repo ${REPO_CENTOS65}/epel.repo
 
 cd ${BUILDDIR}/xenserver-core/RPMS/
 cp -r . ${REPO_CENTOS65}
+
+
+
+
 
