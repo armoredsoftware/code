@@ -1,0 +1,150 @@
+Mock Version: 1.1.32
+ENTER do(['bash', '--login', '-c', 'rpmbuild -bs --target x86_64 --nodeps builddir/build/SPECS/eliloader.spec'], False, '/var/lib/mock/epel-6-x86_64/root/', None, 0, True, False, 9100, 135, None, False, {'LANG': 'en_US.UTF-8', 'TERM': 'vt100', 'SHELL': '/bin/bash', 'CCACHE_DIR': '/tmp/ccache', 'HOSTNAME': 'mock', 'PROMPT_COMMAND': 'echo -n "<mock-chroot>"', 'HOME': '/builddir', 'PATH': '/usr/bin:/bin:/usr/sbin:/sbin', 'CCACHE_UMASK': '002'}, logger=<mockbuild.trace_decorator.getLog object at 0x20157d0>)
+Executing command: ['bash', '--login', '-c', 'rpmbuild -bs --target x86_64 --nodeps builddir/build/SPECS/eliloader.spec'] with env {'LANG': 'en_US.UTF-8', 'TERM': 'vt100', 'SHELL': '/bin/bash', 'CCACHE_DIR': '/tmp/ccache', 'HOSTNAME': 'mock', 'PROMPT_COMMAND': 'echo -n "<mock-chroot>"', 'HOME': '/builddir', 'PATH': '/usr/bin:/bin:/usr/sbin:/sbin', 'CCACHE_UMASK': '002'}
+warning: Could not canonicalize hostname: compute2.ext.armored
+Building target platforms: x86_64
+Building for target x86_64
+Wrote: /builddir/build/SRPMS/eliloader-0.3-1.src.rpm
+Child return code was: 0
+LEAVE do --> 
+
+ENTER do(['bash', '--login', '-c', 'rpmbuild -bb --target x86_64 --nodeps builddir/build/SPECS/eliloader.spec'], False, '/var/lib/mock/epel-6-x86_64/root/', None, 0, True, False, 9100, 135, None, False, {'LANG': 'en_US.UTF-8', 'TERM': 'vt100', 'SHELL': '/bin/bash', 'CCACHE_DIR': '/tmp/ccache', 'HOSTNAME': 'mock', 'PROMPT_COMMAND': 'echo -n "<mock-chroot>"', 'HOME': '/builddir', 'PATH': '/usr/bin:/bin:/usr/sbin:/sbin', 'CCACHE_UMASK': '002'}, logger=<mockbuild.trace_decorator.getLog object at 0x20157d0>)
+Executing command: ['bash', '--login', '-c', 'rpmbuild -bb --target x86_64 --nodeps builddir/build/SPECS/eliloader.spec'] with env {'LANG': 'en_US.UTF-8', 'TERM': 'vt100', 'SHELL': '/bin/bash', 'CCACHE_DIR': '/tmp/ccache', 'HOSTNAME': 'mock', 'PROMPT_COMMAND': 'echo -n "<mock-chroot>"', 'HOME': '/builddir', 'PATH': '/usr/bin:/bin:/usr/sbin:/sbin', 'CCACHE_UMASK': '002'}
+Building target platforms: x86_64
+Building for target x86_64
+Executing(%prep): /bin/sh -e /var/tmp/rpm-tmp.8C291h
++ umask 022
++ cd /builddir/build/BUILD
++ LANG=C
++ export LANG
++ unset DISPLAY
++ cd /builddir/build/BUILD
++ rm -rf xcp-eliloader-master-0.3
++ /usr/bin/gzip -dc /builddir/build/SOURCES/eliloader-0.3.tar.gz
++ /bin/tar -xf -
++ STATUS=0
++ '[' 0 -ne 0 ']'
++ cd xcp-eliloader-master-0.3
++ /bin/chmod -Rf a+rX,u+w,g-w,o-w .
++ exit 0
+Executing(%build): /bin/sh -e /var/tmp/rpm-tmp.bMWWo6
++ umask 022
++ cd /builddir/build/BUILD
++ cd xcp-eliloader-master-0.3
++ LANG=C
++ export LANG
++ unset DISPLAY
++ exit 0
+Executing(%install): /bin/sh -e /var/tmp/rpm-tmp.yOZ5LU
++ umask 022
++ cd /builddir/build/BUILD
++ '[' /builddir/build/BUILDROOT/eliloader-0.3-1.x86_64 '!=' / ']'
++ rm -rf /builddir/build/BUILDROOT/eliloader-0.3-1.x86_64
+++ dirname /builddir/build/BUILDROOT/eliloader-0.3-1.x86_64
++ mkdir -p /builddir/build/BUILDROOT
++ mkdir /builddir/build/BUILDROOT/eliloader-0.3-1.x86_64
++ cd xcp-eliloader-master-0.3
++ LANG=C
++ export LANG
++ unset DISPLAY
++ rm -rf /builddir/build/BUILDROOT/eliloader-0.3-1.x86_64
++ mkdir -p /builddir/build/BUILDROOT/eliloader-0.3-1.x86_64//usr/sbin
++ install -m 0755 eliloader.py /builddir/build/BUILDROOT/eliloader-0.3-1.x86_64/usr/sbin/eliloader
++ /usr/lib/rpm/find-debuginfo.sh --strict-build-id /builddir/build/BUILD/xcp-eliloader-master-0.3
++ /usr/lib/rpm/check-buildroot
++ /usr/lib/rpm/redhat/brp-compress
++ /usr/lib/rpm/redhat/brp-strip-static-archive /usr/bin/strip
++ /usr/lib/rpm/redhat/brp-strip-comment-note /usr/bin/strip /usr/bin/objdump
++ /usr/lib/rpm/brp-python-bytecompile
++ /usr/lib/rpm/redhat/brp-python-hardlink
++ /usr/lib/rpm/redhat/brp-java-repack-jars
+Processing files: eliloader-0.3-1.noarch
+Requires(rpmlib): rpmlib(CompressedFileNames) <= 3.0.4-1 rpmlib(FileDigests) <= 4.6.0-1 rpmlib(PayloadFilesHavePrefix) <= 4.0-1
+Requires: /usr/bin/env
+Checking for unpackaged file(s): /usr/lib/rpm/check-files /builddir/build/BUILDROOT/eliloader-0.3-1.x86_64
+warning: Could not canonicalize hostname: compute2.ext.armored
+Wrote: /builddir/build/RPMS/eliloader-0.3-1.noarch.rpm
+Executing(%clean): /bin/sh -e /var/tmp/rpm-tmp.Ik4i6x
++ umask 022
++ cd /builddir/build/BUILD
++ cd xcp-eliloader-master-0.3
++ rm -rf /builddir/build/BUILDROOT/eliloader-0.3-1.x86_64
++ exit 0
+Child return code was: 0
+LEAVE do --> 
+
+Mock Version: 1.1.32
+ENTER do(['bash', '--login', '-c', 'rpmbuild -bs --target x86_64 --nodeps builddir/build/SPECS/openstack-xapi-plugins.spec'], False, '/var/lib/mock/epel-6-x86_64/root/', None, 0, True, False, 9100, 135, None, False, {'LANG': 'en_US.UTF-8', 'TERM': 'vt100', 'SHELL': '/bin/bash', 'CCACHE_DIR': '/tmp/ccache', 'HOSTNAME': 'mock', 'PROMPT_COMMAND': 'echo -n "<mock-chroot>"', 'HOME': '/builddir', 'PATH': '/usr/bin:/bin:/usr/sbin:/sbin', 'CCACHE_UMASK': '002'}, logger=<mockbuild.trace_decorator.getLog object at 0x256f7d0>)
+Executing command: ['bash', '--login', '-c', 'rpmbuild -bs --target x86_64 --nodeps builddir/build/SPECS/openstack-xapi-plugins.spec'] with env {'LANG': 'en_US.UTF-8', 'TERM': 'vt100', 'SHELL': '/bin/bash', 'CCACHE_DIR': '/tmp/ccache', 'HOSTNAME': 'mock', 'PROMPT_COMMAND': 'echo -n "<mock-chroot>"', 'HOME': '/builddir', 'PATH': '/usr/bin:/bin:/usr/sbin:/sbin', 'CCACHE_UMASK': '002'}
+warning: Could not canonicalize hostname: compute2.ext.armored
+Building target platforms: x86_64
+Building for target x86_64
+Wrote: /builddir/build/SRPMS/openstack-xapi-plugins-2013.2-1.src.rpm
+Child return code was: 0
+LEAVE do --> 
+
+ENTER do(['bash', '--login', '-c', 'rpmbuild -bb --target x86_64 --nodeps builddir/build/SPECS/openstack-xapi-plugins.spec'], False, '/var/lib/mock/epel-6-x86_64/root/', None, 0, True, False, 9100, 135, None, False, {'LANG': 'en_US.UTF-8', 'TERM': 'vt100', 'SHELL': '/bin/bash', 'CCACHE_DIR': '/tmp/ccache', 'HOSTNAME': 'mock', 'PROMPT_COMMAND': 'echo -n "<mock-chroot>"', 'HOME': '/builddir', 'PATH': '/usr/bin:/bin:/usr/sbin:/sbin', 'CCACHE_UMASK': '002'}, logger=<mockbuild.trace_decorator.getLog object at 0x256f7d0>)
+Executing command: ['bash', '--login', '-c', 'rpmbuild -bb --target x86_64 --nodeps builddir/build/SPECS/openstack-xapi-plugins.spec'] with env {'LANG': 'en_US.UTF-8', 'TERM': 'vt100', 'SHELL': '/bin/bash', 'CCACHE_DIR': '/tmp/ccache', 'HOSTNAME': 'mock', 'PROMPT_COMMAND': 'echo -n "<mock-chroot>"', 'HOME': '/builddir', 'PATH': '/usr/bin:/bin:/usr/sbin:/sbin', 'CCACHE_UMASK': '002'}
+Building target platforms: x86_64
+Building for target x86_64
+Executing(%prep): /bin/sh -e /var/tmp/rpm-tmp.pWBfNS
++ umask 022
++ cd /builddir/build/BUILD
++ LANG=C
++ export LANG
++ unset DISPLAY
++ cd /builddir/build/BUILD
++ rm -rf nova-2013.2
++ /usr/bin/gzip -dc /builddir/build/SOURCES/nova-2013.2.tar.gz
++ /bin/tar -xf -
++ STATUS=0
++ '[' 0 -ne 0 ']'
++ cd nova-2013.2
++ /bin/chmod -Rf a+rX,u+w,g-w,o-w .
++ exit 0
+Executing(%build): /bin/sh -e /var/tmp/rpm-tmp.UbInSU
++ umask 022
++ cd /builddir/build/BUILD
++ cd nova-2013.2
++ LANG=C
++ export LANG
++ unset DISPLAY
++ exit 0
+Executing(%install): /bin/sh -e /var/tmp/rpm-tmp.hKuSXW
++ umask 022
++ cd /builddir/build/BUILD
++ '[' /builddir/build/BUILDROOT/openstack-xapi-plugins-2013.2-1.x86_64 '!=' / ']'
++ rm -rf /builddir/build/BUILDROOT/openstack-xapi-plugins-2013.2-1.x86_64
+++ dirname /builddir/build/BUILDROOT/openstack-xapi-plugins-2013.2-1.x86_64
++ mkdir -p /builddir/build/BUILDROOT
++ mkdir /builddir/build/BUILDROOT/openstack-xapi-plugins-2013.2-1.x86_64
++ cd nova-2013.2
++ LANG=C
++ export LANG
++ unset DISPLAY
++ rm -rf /builddir/build/BUILDROOT/openstack-xapi-plugins-2013.2-1.x86_64
++ mkdir -p /builddir/build/BUILDROOT/openstack-xapi-plugins-2013.2-1.x86_64/usr/lib/xapi/plugins
++ cp -r plugins/xenserver/xenapi/etc/xapi.d/plugins/_bittorrent_seeder plugins/xenserver/xenapi/etc/xapi.d/plugins/agent plugins/xenserver/xenapi/etc/xapi.d/plugins/bandwidth plugins/xenserver/xenapi/etc/xapi.d/plugins/bittorrent plugins/xenserver/xenapi/etc/xapi.d/plugins/config_file plugins/xenserver/xenapi/etc/xapi.d/plugins/console plugins/xenserver/xenapi/etc/xapi.d/plugins/glance plugins/xenserver/xenapi/etc/xapi.d/plugins/ipxe plugins/xenserver/xenapi/etc/xapi.d/plugins/kernel plugins/xenserver/xenapi/etc/xapi.d/plugins/migration plugins/xenserver/xenapi/etc/xapi.d/plugins/nova_plugin_version plugins/xenserver/xenapi/etc/xapi.d/plugins/pluginlib_nova.py plugins/xenserver/xenapi/etc/xapi.d/plugins/utils.py plugins/xenserver/xenapi/etc/xapi.d/plugins/workarounds plugins/xenserver/xenapi/etc/xapi.d/plugins/xenhost plugins/xenserver/xenapi/etc/xapi.d/plugins/xenstore.py /builddir/build/BUILDROOT/openstack-xapi-plugins-2013.2-1.x86_64/usr/lib/xapi/plugins/
++ /usr/lib/rpm/check-buildroot
++ /usr/lib/rpm/redhat/brp-compress
++ /usr/lib/rpm/redhat/brp-strip /usr/bin/strip
++ /usr/lib/rpm/redhat/brp-strip-static-archive /usr/bin/strip
++ /usr/lib/rpm/redhat/brp-strip-comment-note /usr/bin/strip /usr/bin/objdump
++ /usr/lib/rpm/brp-python-bytecompile
++ /usr/lib/rpm/redhat/brp-python-hardlink
++ /usr/lib/rpm/redhat/brp-java-repack-jars
+Processing files: openstack-xapi-plugins-2013.2-1.noarch
+Requires(rpmlib): rpmlib(CompressedFileNames) <= 3.0.4-1 rpmlib(FileDigests) <= 4.6.0-1 rpmlib(PartialHardlinkSets) <= 4.0.4-1 rpmlib(PayloadFilesHavePrefix) <= 4.0-1
+Requires: /usr/bin/env /usr/bin/python
+Checking for unpackaged file(s): /usr/lib/rpm/check-files /builddir/build/BUILDROOT/openstack-xapi-plugins-2013.2-1.x86_64
+warning: Could not canonicalize hostname: compute2.ext.armored
+Wrote: /builddir/build/RPMS/openstack-xapi-plugins-2013.2-1.noarch.rpm
+Executing(%clean): /bin/sh -e /var/tmp/rpm-tmp.qQ1Ov4
++ umask 022
++ cd /builddir/build/BUILD
++ cd nova-2013.2
++ rm -rf /builddir/build/BUILDROOT/openstack-xapi-plugins-2013.2-1.x86_64
++ exit 0
+Child return code was: 0
+LEAVE do --> 
+

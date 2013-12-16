@@ -1,0 +1,56 @@
+2013-12-12 18:13:47,895 - Mock Version: 1.1.32
+2013-12-12 18:13:47,896 - Start: unpacking root cache
+2013-12-12 18:13:49,907 - Finish: unpacking root cache
+2013-12-12 18:13:49,908 - Start: cleaning yum metadata
+2013-12-12 18:13:49,913 - Finish: cleaning yum metadata
+2013-12-12 18:13:49,921 - Start: device setup
+2013-12-12 18:13:49,925 - Finish: device setup
+2013-12-12 18:13:49,925 - Start: yum update
+2013-12-12 18:13:51,528 - Start: Outputting list of available packages
+2013-12-12 18:13:56,741 - Finish: Outputting list of available packages
+2013-12-12 18:13:56,742 - Finish: yum update
+2013-12-12 18:13:57,479 - Finish: lock buildroot
+2013-12-12 18:13:57,479 - Finish: chroot init
+2013-12-12 18:13:57,539 - Start: build phase for eliloader-0.3-1.src.rpm
+2013-12-12 18:13:57,540 - Start: device setup
+2013-12-12 18:13:57,543 - Finish: device setup
+2013-12-12 18:13:57,568 - Start: build setup for eliloader-0.3-1.src.rpm
+2013-12-12 18:14:00,036 - Finish: build setup for eliloader-0.3-1.src.rpm
+2013-12-12 18:14:00,036 - Start: rpmbuild -bb eliloader-0.3-1.src.rpm
+2013-12-12 18:14:00,043 - Start: Outputting list of installed packages
+2013-12-12 18:14:00,260 - Finish: Outputting list of installed packages
+2013-12-12 18:14:00,420 - Finish: rpmbuild -bb eliloader-0.3-1.src.rpm
+2013-12-12 18:14:00,437 - Finish: build phase for eliloader-0.3-1.src.rpm
+2013-12-12 18:14:00,438 - Start: lock buildroot
+2013-12-12 18:14:00,438 - Start: clean chroot
+2013-12-12 18:14:00,909 - Finish: clean chroot
+2013-12-12 18:14:00,909 - Finish: lock buildroot
+2013-12-12 18:14:00,909 - Finish: run
+2013-12-12 18:38:40,734 - Mock Version: 1.1.32
+2013-12-12 18:38:40,735 - Start: unpacking root cache
+2013-12-12 18:38:42,868 - Finish: unpacking root cache
+2013-12-12 18:38:42,868 - Start: cleaning yum metadata
+2013-12-12 18:38:42,874 - Finish: cleaning yum metadata
+2013-12-12 18:38:42,884 - Start: device setup
+2013-12-12 18:38:42,888 - Finish: device setup
+2013-12-12 18:38:42,888 - Start: yum update
+2013-12-12 18:38:45,108 - Start: Outputting list of available packages
+2013-12-12 18:38:50,408 - Finish: Outputting list of available packages
+2013-12-12 18:38:50,409 - Finish: yum update
+2013-12-12 18:38:51,148 - Finish: lock buildroot
+2013-12-12 18:38:51,148 - Finish: chroot init
+2013-12-12 18:38:51,209 - Start: build phase for openstack-xapi-plugins-2013.2-1.src.rpm
+2013-12-12 18:38:51,209 - Start: device setup
+2013-12-12 18:38:51,214 - Finish: device setup
+2013-12-12 18:38:51,238 - Start: build setup for openstack-xapi-plugins-2013.2-1.src.rpm
+2013-12-12 18:38:55,333 - Finish: build setup for openstack-xapi-plugins-2013.2-1.src.rpm
+2013-12-12 18:38:55,333 - Start: rpmbuild -bb openstack-xapi-plugins-2013.2-1.src.rpm
+2013-12-12 18:38:55,338 - Start: Outputting list of installed packages
+2013-12-12 18:38:55,558 - Finish: Outputting list of installed packages
+2013-12-12 18:38:56,633 - Finish: rpmbuild -bb openstack-xapi-plugins-2013.2-1.src.rpm
+2013-12-12 18:38:56,650 - Finish: build phase for openstack-xapi-plugins-2013.2-1.src.rpm
+2013-12-12 18:38:56,650 - Start: lock buildroot
+2013-12-12 18:38:56,651 - Start: clean chroot
+2013-12-12 18:38:57,242 - Finish: clean chroot
+2013-12-12 18:38:57,242 - Finish: lock buildroot
+2013-12-12 18:38:57,243 - Finish: run

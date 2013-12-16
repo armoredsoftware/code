@@ -1,0 +1,4 @@
+[Armored]
+name=Armored
+baseurl=http://router.ext.armored/armoredrepo/CentOS6.5
+enabled=1
