@@ -5,62 +5,34 @@
 # It requireds the xenserver-core-latest.tgz tarball that is built
 # by ../compute/xen/xencorebuild.sh
 
-TOP_LEVEL=${TOP_LEVEL:-../..}
+TOP_LEVEL=${TOP_LEVEL:-..}
 UTIL_DIR=${UTIL_DIR:-${TOP_LEVEL}/util}
 { . ${UTIL_DIR}/fns ; } || { echo "!!! Failed to source file ${UTIL_DIR}/fns." ; exit 1; }
 
-BUILDDIR=/xenserver-core-build
-REPO_DIR=./www_html/armoredrepo
+REPO_DIR=${PWD}/www_html/armoredrepo
 REPO_CENTOS65=${REPO_DIR}/CentOS6.5
 
-
-
-# We have to be the root user.
-check_root_user
-
-# Puppet must be disabled to prevent it from over writing the passwd and group
-# files since the mock user will be added and 
-echo "# !!!! Shutdown puppet."
-which systemctl 2> /dev/null
-if [ $? -eq 0 ] ; then
-  systemctl stop puppetagent.service
-  systemctl disable puppetagent.service
-else
-  service puppet status
-  if [ $? -eq 0 ] ; then
-    service puppet stop
-    chkconfig puppet off
-  fi
+if [ "${USERNAME}" == "root" ] ; then 
+  echo "!!!! Do not run this script as user 'root'."
+  exit 1;
 fi
 
 
-echo "# Creating directory /xenserver_core for tar ball"
-if [ ! -f ${BUILDDIR} ] ; then
-  mkdir ${BUILDDIR}
-  chmod a+xwr ${BUILDDIR}
-fi
+echo "# Creating directory for tar ball"
+BUILDDIR=`mktemp -d`
+
 
 # We need to get the rpm tarball from somewhere.
 echo "# Untar the xen server core tarball."
 if [ $# -eq 1 ] ; then
-  # Remove the old dir
-  if [ -f ${BUILDDIR}/xenserver-core ] ; then
-    rm -rf ${BUILDDIR}/xenserver-core
-  fi
-  # Unpack the tarball.
-  tar -C ${BUILDDIR} -zxf $1 
+  OLDIDR=`pwd`
+  cd ${BUILDDIR}
+  tar  -zxf $1 
+  cd ${OLDDIR}
 else
-  if [ -f ${BUILDDIR}/xenserver-core-latest.tgz ] ; then
-    if [ -f ${BUILDDIR}/xenserver-core ] ; then
-      rm -rf ${BUILDDIR}/xenserver-core
-    fi
-    cd ${BUILDDIR}
-    tar -zxf ${BUILDDIR}/xenserver-core-latest.tgz
-  else
-    echo "!!!! Could not find xenserver-core RPM tarball."
-    echo "Give it as the first argument to this script."
-    exit 1
-  fi
+  echo "!!!! Could not find xenserver-core RPM tarball."
+  echo "Give it as the first argument to this script."
+  exit 1
 fi
 
 echo "# setup the xen server core yum repo."
@@ -74,13 +46,16 @@ cp RPM-GPG-KEY-EPEL-6 ${REPO_CENTOS65}/RPM-GPG-KEY-EPEL-6
 
 cd ${BUILDDIR}/xenserver-core/RPMS/
 cp -r . ${REPO_CENTOS65}
-# Get rid of some files that we done need.
+# Get rid of some files that we don't need.
 cd ${REPO_CENTOS65} 
-find . -name \*.src.rpm -exec rm {} ;
-find . -name \*.log -exec rm {} ;
+rm -rf repodata
+find . -name available_pkgs -exec rm {} \;
+find . -name installed_pkgs -exec rm {} \;
+find . -name \*.src.rpm -exec rm {} \;
+find . -name \*.log -exec rm {} \;
 
 echo "#############################################################"
-echo "Files in the directory '${${REPO_CENTOS65}' have been updated."
+echo "Files in the directory '${REPO_CENTOS65}' have been updated."
 echo "Make sure that they are pushed to the git repository."
 echo "#############################################################"
 
