@@ -92,7 +92,7 @@ sudo -u ${SUDO_USER} PATH=${PATH} make  || exit 1
 
 cd ..
 XEN_TARBALL=xenserver-core-latest.tgz
-sudo -u ${SUDO_USER} tar zcf ${XEN_TARBALL} xenserver-core/RPMS xenserver-core/scripts xenserver-core/deps xenserver-core/Makefile  xenserver-core/SPECS xenserver-core/xapi.repo
+sudo -u ${SUDO_USER} tar zcf ${XEN_TARBALL} xenserver-core/RPMS xenserver-core/scripts xenserver-core/deps xenserver-core/Makefile  xenserver-core/SPECS xenserver-core/xapi.repo xenserver-core/rpms/*.repo
 
 echo "#############################################################"
 echo "The INSTALLATION tarball is at ${PWD}/${XEN_TARBALL}. "
