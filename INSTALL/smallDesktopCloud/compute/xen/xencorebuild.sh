@@ -34,6 +34,8 @@ else
   fi
 fi
 
+yum install -y redhat-lsb-core || exit 1
+
 # For CentOS we need the ELEL repositories.
 if [ "$(lsb_release -is)" == "CentOS" ] ; then
   OLDPWD=`pwd`
@@ -48,7 +50,7 @@ if [ "$(lsb_release -is)" == "CentOS" ] ; then
 fi
 
 yum install -y createrepo || exit 1
-yum install -y mock redhat-lsb-core || exit 1
+yum install -y mock || exit 1
 
 # Mock will not run as super user.
 echo "# Adding mock group to user '${SUDO_USER}'"
