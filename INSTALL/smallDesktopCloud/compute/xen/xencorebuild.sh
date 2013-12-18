@@ -2,7 +2,8 @@
 #
 # Build (not install) the xen core which should include the xen api. This should
 # only have to be done once. A tarball is produced which is then
-# used for all of the compute hosts.
+# used for all of the compute hosts. See ../../router/README.md for
+# what to do with the tarball.
 #
 # This script is based on information found 
 # at https://github.com/xenserver/xenserver-core
