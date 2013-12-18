@@ -22,3 +22,8 @@ if [ $? -ne 0 ] ; then
 else
   sed -i -e "/dom0_mem=/s/dom0_mem=[^ ]*/dom0_mem=3072M,max:3072M/" /boot/grub/grub.conf
 fi
+
+echo "################################################################"
+echo "In order to get the xen hypervisor running and dom0 running, reboot."
+echo "> sudo reboot"
+echo "###############################################################"

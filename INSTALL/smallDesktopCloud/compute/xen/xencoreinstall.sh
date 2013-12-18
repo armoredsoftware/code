@@ -97,7 +97,6 @@ echo "/usr/lib64/blktap/lib" >> /etc/ld.so.conf.d/blktap-x86_64.conf
 ldconfig
 
 echo "###############################################################"
-echo "The xen hypervisor and kernal were installed. We need to reboot"
-echo "to get them running."
+echo "A new kernel was installed so reboot to get it runnin."
 echo "    > sudo reboot"
 echo "###############################################################"
