@@ -14,4 +14,11 @@ check_root_user
 # run the install wizard.
 xenserver-install-wizard --yes-to-all
 
-
+# We need to limit the amount of memory used by dom0 so that there
+# is memory available for domU's.
+grep -e "dom0_mem=" /boot/grub/grub.conf > /dev/null
+if [ $? -ne 0 ] ; then
+  sed -i -e "/kernel \/xen.gz/s/xen.gz/xen.gz dom0_mem=3072M,max:3072M/" /boot/grub/grub.conf
+else
+  sed -i -e "/dom0_mem=/s/dom0_mem=[^ ]*/dom0_mem=3072M,max:3072M/" /boot/grub/grub.conf
+fi
