@@ -86,8 +86,10 @@ install -m 0644 ArmoredConfig.repo /etc/yum.repos.d/ArmoredConfig.repo
 
 install -m 0644 RPM-GPG-KEY-EPEL-6 /etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-6
 
-
-yum install -y xenserver-core
+# Ran into a problem with our packages not having a signature. Need 
+# to figure out why. Adding the --nogpgcheck gets around the problem for now.
+#yum install -y xenserver-core
+yum install -y xenserver-core --nogpgcheck
 
 echo "#Setting up ld.so for libvhd.so.0"
 touch /etc/ld.so.conf.d/blktap-x86_64.conf

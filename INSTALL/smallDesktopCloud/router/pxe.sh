@@ -54,6 +54,9 @@ cp -r * ${WWW_DIR}
 #cd ${WWW_DIR}
 #tar -zxf ${SHELLDIR}/www_html.tgz
 
+cd ${WWW_DIR}/armoredrepo/CentOS6.5
+createrepo .
+
 # The kick start files have some network variables in them that need to be
 # replaced with the real thing.
 cd ${WWW_DIR}
@@ -65,6 +68,7 @@ for ksFile in ${KSFILES} ; do
   sed -i -e "s/@CLOUD_DATA_COMPUTE_IPADDR_PREFIX@/${CLOUD_DATA_COMPUTE_IPADDR_PREFIX}/g" ${ksFile}
   sed -i -e "s/@CLOUD_EXT_NETMASK@/${CLOUD_EXT_NETMASK}/g" ${ksFile}
 done
+
 
 
 systemctl enable xinetd.service
