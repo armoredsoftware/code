@@ -5,32 +5,44 @@ install
 url --url=http://kickstart.ittc.ku.edu/mirror/centos/6.5/os/x86_64
 lang en_US.UTF-8
 keyboard us
-network --onboot yes --device eth0 --bootproto static --ip 10.100.0.2 --netmask 255.255.255.0 --gateway 10.100.0.254 --noipv6 --nameserver 10.100.0.254 --hostname compute2.ext.armored
-network --onboot no --device eth1 --bootproto dhcp --noipv6
-rootpw  --iscrypted $6$BRSRiEH1ULNKcY5Z$PP4VuU.kW9hllPBZ/uq1e/K0LoesiiFpNpHwGln8Z.wZCAPfl.ryDSzv6epYO0/Yezk2tlOkWCqIciQKr5eQY0
-firewall --service=ssh
+network --onboot yes --device eth0 --bootproto dhcp --noipv6
+network --onboot yes --device eth1 --bootproto dhcp --noipv6
+rootpw  --iscrypted $6$nOtR6ymlsx0eKgaU$rmXsKsfahrcHQ2i8WdJ17nJaihV4VcDxvs4TbWF5dcV91nBfc2vk3lkmtWVLOaIScI6Tz09POSLgH6ME2IXLi/
+#firewall --service=ssh
+firewall --disabled
 authconfig --enableshadow --passalgo=sha512
+#selinux --enforcing
 selinux --disabled
 timezone --utc America/Chicago
-bootloader --location=mbr --driveorder=sda --append="crashkernel=auto rhgb quiet"
+bootloader --location=mbr --driveorder=xvda --append="crashkernel=auto console=hvc0 rhgb quiet"
 # The following is the partition information you requested
 # Note that any partitions you deleted are not expressed
 # here so unless you clear all partitions first, this is
 # not guaranteed to work
-#clearpart --all --drives=sda
+# The zerombr is needed since we usually start with an unitialized 
+# disk image file.
+zerombr yes
+clearpart --all --drives=xvda
+part pv.202002 --grow --size=1
+part /boot --fstype=ext4 --size=500
 
-#part /boot --fstype=ext4 --size=500
-#part pv.008002 --grow --size=1
+volgroup VolGroup --pesize=4096 pv.202002
+logvol / --fstype=ext4 --name=lv_root --vgname=VolGroup --grow --size=1024 --maxsize=51200
+logvol swap --name=lv_swap --vgname=VolGroup --grow --size=614 --maxsize=614
 
-#volgroup vg_compute2 --pesize=4096 pv.008002
-#logvol /home --fstype=ext4 --name=lv_home --vgname=vg_compute2 --grow --size=100
-#logvol / --fstype=ext4 --name=lv_root --vgname=vg_compute2 --grow --size=1024 --maxsize=51200
-#logvol swap --name=lv_swap --vgname=vg_compute2 --grow --size=8000 --maxsize=8000
 
 repo --name="CentOS"  --baseurl=http://kickstart.ittc.ku.edu/mirror/centos/6.5/os/x86_64 --cost=100
 
-%packages
+shutdown
+
+%packages --nobase
 @core
-@server-policy
-@workstation-policy
+wget
+openssh-clients
+%end
+
+%post
+# For some reason the HWADDR put into the eth0 device is wrong.
+# It is not really needed so remove it.
+sed -i -e "/HWADDR/s/^/#/" /etc/sysconfig/network-scripts/ifcfg-eth0
 %end

@@ -6,7 +6,8 @@ url --url=http://kickstart.ittc.ku.edu/mirror/centos/6.5/os/x86_64
 lang en_US.UTF-8
 keyboard us
 rootpw  --iscrypted $6$BRSRiEH1ULNKcY5Z$PP4VuU.kW9hllPBZ/uq1e/K0LoesiiFpNpHwGln8Z.wZCAPfl.ryDSzv6epYO0/Yezk2tlOkWCqIciQKr5eQY0
-firewall --service=ssh
+#firewall --service=ssh
+firewall --disabled
 authconfig --enableshadow --passalgo=sha512
 selinux --disabled
 timezone --utc America/Chicago
