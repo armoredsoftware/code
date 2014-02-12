@@ -86,12 +86,15 @@ echo "armored ALL=(root) ALL" | tee -a /etc/sudoers.d/armored
 
 # Create a shell script that will clone the armored code repository.
 GIT_ARMORED_CODE=~armored/git-armored-code.sh
-echo "#!/bin/bash" > ${GIT_ARMORED_CODE}
-echo "# Use git to obtain a anonymous clone of the Armored Software 'code' repostiroty" >> ${GIT_ARMORED_CODE}
-echo "git clone https://github.com/armoredsoftware/code.git" >> ${GIT_ARMORED_CODE}
+cat > ${GIT_ARMORED_CODE} <<EOF
+#!/bin/bash
+# Use git to obtain a anonymous clone of the Armored Software 'code' repostiroty
+# NOTE: This file is created in the kickstart file %post section.
+git clone https://github.com/armoredsoftware/code.git
+EOF
+
 chmod a+x ${GIT_ARMORED_CODE}
 chown armored ${GIT_ARMORED_CODE}
-
 
 # Create a shell script that will change the user of the git clone
 # so that a 'git push' may be done.
@@ -100,16 +103,28 @@ cat > ${GIT_CHANGE_USER} <<EOF
 #!/bin/sh
 #
 # Change the username for the git push command to work.
+# NOTE: This file is created in the kickstart file %post section.
 # 
 if [ ! \$# -eq 1 ] ; then 
   echo "You must provide 1 argument that is a github username that is a member of the armoredsoftware github group."
   exit 1
 fi
 git remote set-url origin https://\${1}@github.com/armoredsoftware/code.git
+git config user.name "\${1}"
 EOF
 
 chmod a+x ${GIT_CHANGE_USER}
 chown armored ${GIT_CHANGE_USER}
 
+README_FILE=~armored/README.md
+cat < ${README_FILE} <<EOF
+ARMORED USER
+============
+The script '${GIT_ARMORED_CODE}' is used to make a clone of the Armored Software
+git repository. It is any anonymous clone.
+The script '${GIT_CHANGE_USER}' is used to change the git clone user to your
+github user name (that must be a member of the ArmoredSoftware github group)
+so that you may submit code revisions.
+EOF
 
 %end
