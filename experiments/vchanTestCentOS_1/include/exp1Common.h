@@ -1,0 +1,32 @@
+#ifndef EXPCOMMON_H
+
+#define EXPCOMMON_H
+
+// The grant reference path for the serverExp1 and the clientExp1
+// that the mgrExp1 uses to communicate with the serverExp1 an clientExp1
+// over the vchan.
+// The mgrExp1 (in domain0) acts as a vchan client.
+// Both the serverExp1 and clientExp1 act as vchan servers when communicating
+// with mgrExp1
+#define MGR_REL_XS_PATH "data/mgrVchan"
+
+// The grant reference path for the serverExp1 vchan server. This
+// is the Tx channel from the servers point of view. Rx for the client point
+// of view.
+#define SERV_REL_TX_XS_PATH "data/serverVchanTx"
+// The grant reference path for the serverExp1 vchan server. This
+// is the Rx channel from the servers point of view. Tx for the client
+// point of view.
+#define SERV_REL_RX_XS_PATH "data/serverVchanRx"
+
+// The domainID that the mgrExp1 is running in.
+#define MGR_DOMAIN_ID 0
+
+// The number of digits to allocate for the domain ids.
+#define DOMAIN_ID_CHAR_LEN 6
+
+
+// The number of characters to allocate for messages.
+#define EXP1_MSG_LEN 8
+
+#endif

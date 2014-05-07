@@ -1,0 +1,18 @@
+#ifndef EXPCOMMON_H
+
+#define EXPCOMMON_H
+
+// The grant reference path for the masterExp1 and the subExp1
+// that the mgrExp1 uses to communicate with the masterExp1 an subExp1
+// over the vchan.
+// The mgrExp1 (in domain0) acts as a vchan client.
+// Both the masterExp1 and subExp1 act as vchan servers.
+#define MGR_REL_XS_PATH "data/mgrVchan"
+
+// The domainID that the mgrExp1 is running in.
+#define MGR_DOMAIN_ID 0
+
+// The number of digits to allocate for the domain ids.
+#define DOMAIN_ID_CHAR_LEN 6
+
+#endif
