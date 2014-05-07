@@ -51,8 +51,10 @@ NOTE: Do not try to run this script when your PWD is a different directory then 
 ./armored_network.conf
      Configuration file for sysctl. Just enables forwarding.
 
-To add a new compute host to DNS you must add it to
-./hosts-armored and then run the networking.sh script.
+To setup the router to also provide PXE booting to kickstart the compute nodes
+do the following:
+
+    > sudo ./pxe.sh
 
 
 Notes
