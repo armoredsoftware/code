@@ -24,6 +24,7 @@ name of an actual compute node.
   * NOTE: When you login into computeX are in dom0.
 * Compile the experiement applications.
   * change directory to this directory (directory with this README).
+  * sudo yum install xen-devel-4.2.2
   * > make
 * Create two VMs. One for the server and one for the client.
   * On your compute node:
