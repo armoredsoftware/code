@@ -74,7 +74,7 @@ name of an actual compute node.
 * On clientExp1 VM console:
   * > ./clientExp1
 * On dom0:
-  * > ./mgrExp1 <server domId> <client domId>
+  * > sudo ./mgrExp1 <server domId> <client domId>
 * Watch the serverExp1 console to see message ids sent to client and those recieved
 back from client as responses.
 * Watch the clientExp1 console to see messages ids received from server and responses
