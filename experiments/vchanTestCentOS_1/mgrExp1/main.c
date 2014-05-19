@@ -161,58 +161,6 @@ void processArgs(int argc, char **argv, cmdArgs * cmdArgsVal) {
 
 //####################################################################
 
-/** Read the domainID of the subExp1 from the mgrExp1 over the
- * vChan.
- * This routine will block until the domainID is retrieved from 
- * the mgr.
- * return - the domainID. On any failure exit(1) is called.
- **/
-int readSubExp1DomainID(struct libxenvchan *ctrl) {
-  char buf[DOMAIN_ID_CHAR_LEN + 1];
-  int size = DOMAIN_ID_CHAR_LEN;
-  char * invalidChar;
-  int domainID;
-
-  // Read the subExp1 domain ID from mgrExp1 vchan client.
-  // The domainID has to be right justified for the following error
-  // checking to work. So the domainID number must be preceeded with
-  // white space or '0's.
-  size = libxenvchan_read(ctrl, buf, size);
-
-  // Was there a system error?
-  if (size < 0) {
-    // There was a significant error. Abort.
-    perror("masterExp1: read failed for mgrExp1.");
-    libxenvchan_close(ctrl);
-    exit(1);
-  }
-
-  // Did we get all of the characters of the domainID number string?
-  if (size != DOMAIN_ID_CHAR_LEN) {
-    fprintf(stderr, "masterExp1: We expected to read %d characters for the"
-	    "subExp1 domain ID but got %d from mgrExp1\n",
-	    DOMAIN_ID_CHAR_LEN, size);
-    libxenvchan_close(ctrl);
-    exit(1);
-  }
-
-  buf[DOMAIN_ID_CHAR_LEN] = 0; // put null at end of string so we have a valid C string.
-  // Convert the string to an integer.
-  domainID = strtol(buf, &invalidChar, 10);
-
-  if ( invalidChar != NULL ) {
-    fprintf(stderr, "masterExp1: There was an invalid character in the domainID. The invalid portion of the domainID is '%s'.\n", invalidChar);
-    libxenvchan_close(ctrl);
-    exit(1);
-    
-  }
-
-  return domainID;
-}
-
-//####################################################################
-
-
 int main(int argc, char **argv)
 {
   struct libxenvchan *ctrlServExp = 0;

@@ -25,8 +25,8 @@ APP = clientExp1
 all: $(EXP_ROOT)/bin/$(APP)
 
 
-$(APP): $(APP_OBJS)
-	$(CC) $(LDFLAGS) -o $@ $(APP_OBJS) $(LDLIBS) $(APPEND_LDFLAGS)
+$(APP): $(APP_OBJS) $(EXP_ROOT)/common/common.o
+	$(CC) $(EXP_ROOT)/common/common.c $(LDFLAGS) -o $@ $(APP_OBJS) $(LDLIBS) $(APPEND_LDFLAGS)
 
 $(EXP_ROOT)/bin/$(APP): $(APP)
 	cp $< $@

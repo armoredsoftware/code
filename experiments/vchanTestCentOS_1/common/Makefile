@@ -17,7 +17,7 @@ LDLIBS = -lxenvchan -lxenctrl
 
 $(APP_OBJS) : CFLAGS += $(CFLAGS_libxenctrl)
 
-APP = serverExp1
+APP = common
 
 ###########################################################
 
@@ -26,12 +26,13 @@ all: $(EXP_ROOT)/bin/$(APP)
 
 
 $(APP): $(APP_OBJS)
-	$(CC) $(EXP_ROOT)/common/common.c $(LDFLAGS) -o $@ $(APP_OBJS) $(LDLIBS) $(APPEND_LDFLAGS)
+	$(CC) $(LDFLAGS) -o $@ $(APP_OBJS) $(LDLIBS) $(APPEND_LDFLAGS)
 
 $(EXP_ROOT)/bin/$(APP): $(APP)
 	cp $< $@
 
 ##########################################################
+
 
 .PHONY: clean
 clean:
