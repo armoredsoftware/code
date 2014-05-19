@@ -215,45 +215,14 @@ int main(int argc, char **argv)
   // Get the domID of the clientExp1 from the mgrExp1
   clientExp1DomainId = readSubExp1DomainID((xentoollog_logger *)xc_logger);
 
-  // Creat the control structure for the vchan server that is used to send to the
-  // client.
-  //We act as a vchan server when talking to the mgrExp1 application.
-  fprintf(stdout, "serverExp1: server TX init of xs=%s for client domId=%d.\n", SERV_REL_TX_XS_PATH, clientExp1DomainId); 
-  txCtrl = libxenvchan_server_init((xentoollog_logger *)xc_logger, clientExp1DomainId,
-				 SERV_REL_TX_XS_PATH, 0, 0);
+  //setup receive chan as server
+  rxCtrl = createReceiveChan((xentoollog_logger *)xc_logger, clientExp1DomainId); 
 
-  if (txCtrl == NULL) {
-    // We had an error trying to initialise the server vchan.
-    char * lclErrStr = strerror(errno);
-    fprintf(stderr, "Error: %s: libxenvchan_server_init: domId=%d, xsPath=%s.\n",
-	    lclErrStr, clientExp1DomainId, SERV_REL_TX_XS_PATH);
-    if(errno == ENOENT) {
-      fprintf(stderr, "    kernel module xen_gntalloc (/dev/xen/gntalloc) or xen_evtchn (/dev/xen/evtchn) may not be running.\n");
-    }
-    exit(1);
-  }
-  txCtrl->blocking = 1; // Block for each vchan IO ?
 
-  // Creat the control structure for the vchan server that is used to send to the
-  // client.
-  // We act as a vchan server when talking to the mgrExp1 application.
-  fprintf(stdout, "serverExp1: server RX init of xs=%s for client domId=%d.\n", SERV_REL_RX_XS_PATH, clientExp1DomainId); 
-  rxCtrl = libxenvchan_server_init((xentoollog_logger *)xc_logger, clientExp1DomainId,
-				 SERV_REL_RX_XS_PATH, 0, 0);
+  sleep(2);
 
-  if (rxCtrl == NULL) {
-    // We had an error trying to initialise the server vchan.
-    char * lclErrStr = strerror(errno);
-    fprintf(stderr, "Error: %s: libxenvchan_server_init: domId=%d, xsPath=%s.\n",
-	    lclErrStr, clientExp1DomainId, SERV_REL_RX_XS_PATH);
-    if(errno == ENOENT) {
-      fprintf(stderr, "    kernel module xen_gntalloc (/dev/xen/gntalloc) or xen_evtchn (/dev/xen/evtchn) may not be running.\n");
-    }
-    exit(1);
-  }
-  rxCtrl->blocking = 1; // Block for each vchan IO ?
-
-  sleep(5); // Give the client a chance to connect to the server.
+  //setup transmit to client's receive chan as a client
+  txCtrl = createTransmitChan((xentoollog_logger *)xc_logger, clientExp1DomainId); 
 
   // Do forever.
   servCount = 1;

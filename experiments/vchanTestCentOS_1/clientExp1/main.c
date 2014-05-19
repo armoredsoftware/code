@@ -153,6 +153,9 @@ int receiveCountFromServer(xentoollog_logger * xc_logger,
   return result;
 }
 
+
+
+
 // ##################################################################
 // Send a count to server over a vchan.
 // xc_logger - may be null
@@ -198,8 +201,6 @@ int main(int argc, char **argv)
   int mgrDomainID = MGR_DOMAIN_ID;
   int serverExp1DomainId; // domainID of the serverExp1 VM. provided by mgrExp1.
   xentoollog_logger_stdiostream * xc_logger;
-  char serverTxXS [256]; // xenStore path for the server transmit
-  char serverRxXS [256]; // xenStore path for the client transmit.
   int servCount;
   int clientCount;
   int vchanStatus;
@@ -227,48 +228,12 @@ int main(int argc, char **argv)
   fprintf(stdout, "clientExp1: serverExp1 domainID=%d.\n", serverExp1DomainId);
 
   // Give the server a chance to get the server side of the channel setup.
+
+  rxCtrl = createReceiveChan((xentoollog_logger *) xc_logger, serverExp1DomainId); 
+
   sleep(2);
 
-  sprintf(serverTxXS, "/local/domain/%d/%s", serverExp1DomainId,
-	  SERV_REL_TX_XS_PATH);
-  // We act as a client so the servers Tx is our Rx.
-  fprintf(stdout, "clientExp1: vchan init for xs=%s to domId=%d,\n",
-	  serverTxXS, serverExp1DomainId );
-  rxCtrl = libxenvchan_client_init((xentoollog_logger *)xc_logger, 
-				   serverExp1DomainId, serverTxXS);
-
-  if(rxCtrl == NULL) {
-    // We had an error trying to initialise the client vchan.
-    char * lclErrStr = strerror(errno);
-    fprintf(stderr, "Error: %s: libxenvchan_client_init: domId=%d, xsPath=%s.\n",
-	    lclErrStr, serverExp1DomainId, serverTxXS);
-    if(errno == ENOENT) {
-      fprintf(stderr, "    kernel module xen_gntalloc (/dev/xen/gntalloc) or xen_evtchn (/dev/xen/evtchn) may not be running.\n");
-    }
-    exit(1);
-  }
-  rxCtrl->blocking = 1; // Block for each vchan IO ?
-
-
-  sprintf(serverRxXS, "/local/domain/%d/%s", serverExp1DomainId,
-	  SERV_REL_RX_XS_PATH);
-  // We act as a client so the servers Rx is our Tx.
-  fprintf(stdout, "clientExp1: vchan init for xs=%s to domId=%d,\n",
-	  serverRxXS, serverExp1DomainId );
-  txCtrl = libxenvchan_client_init((xentoollog_logger *)xc_logger, 
-				   serverExp1DomainId, serverRxXS);
-
-  if(txCtrl == NULL) {
-    // We had an error trying to initialise the client vchan.
-    char * lclErrStr = strerror(errno);
-    fprintf(stderr, "Error: %s: libxenvchan_client_init: domId=%d, xsPath=%s.\n",
-	    lclErrStr, serverExp1DomainId, serverRxXS);
-    if(errno == ENOENT) {
-      fprintf(stderr, "    kernel module xen_gntalloc (/dev/xen/gntalloc) or xen_evtchn (/dev/xen/evtchn) may not be running.\n");
-    }
-    exit(1);
-  }
-  txCtrl->blocking = 1; // Block for each vchan IO ?
+  txCtrl = createTransmitChan((xentoollog_logger *)xc_logger, serverExp1DomainId); 
 
 
   // Do forever.

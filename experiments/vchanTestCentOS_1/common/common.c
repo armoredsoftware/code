@@ -97,6 +97,62 @@ int readSubExp1DomainID( xentoollog_logger * xc_logger) {
 
   return domainID;
 }
+//####################################################################
+struct libxenvchan * createReceiveChan (xentoollog_logger * xc_logger, int id){
+  struct libxenvchan *rxCtrl=0;
+  // We act as a server for our RX.
+  fprintf(stdout, "clientExp1: vchan init for xs=%s to domId=%d,\n",
+	  SERV_REL_RX_XS_PATH, id );
+  rxCtrl = libxenvchan_server_init(xc_logger,
+                                   id, SERV_REL_RX_XS_PATH, 0, 0);
+
+  if(rxCtrl == NULL) {
+    // We had an error trying to initialise the client vchan.
+    char * lclErrStr = strerror(errno);
+    fprintf(stderr, "Error: %s: libxenvchan_client_init: domId=%d, xsPath=%s.\n",
+            lclErrStr, id, SERV_REL_RX_XS_PATH);
+    if(errno == ENOENT) {
+      fprintf(stderr, "    kernel module xen_gntalloc (/dev/xen/gntalloc) or xen_evtchn (/dev/xen/evtchn) may not be running.\n");
+    }
+    exit(1);
+  }
+  rxCtrl->blocking = 1; // Block for each vchan IO ?
+
+  return rxCtrl;
+
+}
+//####################################################################
+
+struct libxenvchan * createTransmitChan(xentoollog_logger * xc_logger, int id){
+
+  struct libxenvchan *txCtrl=0;
+  char serverRxXS [256]; // xenStore path for the server's receive.
+
+  sprintf(serverRxXS, "/local/domain/%d/%s", id,
+          SERV_REL_RX_XS_PATH);
+
+  // We act as a client so the servers Rx is our Tx.
+  fprintf(stdout, "clientExp1: vchan init for xs=%s to domId=%d,\n",
+          serverRxXS, id );
+  txCtrl = libxenvchan_client_init((xentoollog_logger *)xc_logger,
+                                   id, serverRxXS);
+
+  if(txCtrl == NULL) {
+    // We had an error trying to initialise the client vchan.
+    char * lclErrStr = strerror(errno);
+    fprintf(stderr, "Error: %s: libxenvchan_client_init: domId=%d, xsPath=%s.\n",
+            lclErrStr, id, serverRxXS);
+    if(errno == ENOENT) {
+      fprintf(stderr, "    kernel module xen_gntalloc (/dev/xen/gntalloc) or xen_evtchn (/dev/xen/evtchn) may not be running.\n");
+    }
+    exit(1);
+  }
+  txCtrl->blocking = 1; // Block for each vchan IO ?
+
+return txCtrl;
+}
+
+
 /*
 // ###################################################################
 // Get a count from a server over a vchan.

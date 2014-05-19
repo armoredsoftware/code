@@ -29,4 +29,10 @@
 // The number of characters to allocate for messages.
 #define EXP1_MSG_LEN 8
 
+int readSubExp1DomainID( xentoollog_logger * xc_logger);
+
+struct libxenvchan * createReceiveChan (xentoollog_logger * xc_logger, int id);
+
+struct libxenvchan * createTransmitChan(xentoollog_logger * xc_logger, int id);
+
 #endif
