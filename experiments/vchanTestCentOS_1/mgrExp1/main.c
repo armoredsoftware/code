@@ -13,6 +13,7 @@
 #include <time.h>
 
 #include <libxenvchan.h>
+#include <xenctrl.h>
 
 #include <exp1Common.h>
 
@@ -23,7 +24,7 @@
 // Structure for holding command line arguments.
 typedef struct {
   int serverDomID; // domain id of server VM
-  int clientDomID; // domain id of client VM
+  int clientDomID[2]; // domain id of client VM
 } cmdArgs;
 
 
@@ -132,8 +133,8 @@ void processArgs(int argc, char **argv, cmdArgs * cmdArgsVal) {
   char * invalidChar;
 
   // Do we have the correct number of arguments.
-  if ( argc != 3)  {
-    fprintf(stderr, "Need 3 arguments, got %d args.\n", argc);
+  if ( argc != 4)  {
+    fprintf(stderr, "Need 4 arguments, got %d args.\n", argc);
     usage();
     exit(1);
   }
@@ -148,7 +149,7 @@ void processArgs(int argc, char **argv, cmdArgs * cmdArgsVal) {
   }
 
   // Get the server domain ID.
-  cmdArgsVal->clientDomID = strtol(argv[2], &invalidChar, 10);
+  cmdArgsVal->clientDomID[0] = strtol(argv[2], &invalidChar, 10);
 
   if ( *invalidChar != '\0' ) {
     fprintf(stderr, "mgrExp1: There was an invalid character in the client domainID. The invalid portion of the domainID is '%s'.\n", invalidChar);
@@ -156,71 +157,19 @@ void processArgs(int argc, char **argv, cmdArgs * cmdArgsVal) {
     
   }
 
-  
+  cmdArgsVal->clientDomID[1] = strtol(argv[3], &invalidChar, 10);
+
+  if ( *invalidChar != '\0' ) {
+    fprintf(stderr, "mgrExp1: There was an invalid character in the client domainID. The invalid portion of the domainID is '%s'.\n", invalidChar);
+    exit(1);
+    
+  }
 }
 
 //####################################################################
-
-int main(int argc, char **argv)
-{
-  struct libxenvchan *ctrlServExp = 0;
-  struct libxenvchan *ctrlClientExp = 0;
-  char xsServerPath[256];
-  char xsClientPath[256];
-  cmdArgs cmdArgsVal;
-  char domIdStr[DOMAIN_ID_CHAR_LEN + 1];
-  char domIdFmt[5];
+void sendId(struct libxenvchan * chan, char * domIdStr){
   int writeSize;
-
-  fprintf(stderr, "mgrExp1: starting...\n");
-
-  // Get the command line arguments.
-  processArgs(argc, argv, &cmdArgsVal);
-
-  fprintf(stdout, "mgrExp1: service domID=%d, client domID=%d.\n", 
-	  cmdArgsVal.serverDomID, cmdArgsVal.clientDomID);
-
-  sprintf(domIdFmt, "%%% dd", DOMAIN_ID_CHAR_LEN);
-
-  /* The Mgr acts as a client to the serverExp1 and clientExp1 to give them
-   * the domain Ids of each other.
-   */
-
-  // Setup server connection
-  sprintf(xsServerPath, "/local/domain/%d/%s", cmdArgsVal.serverDomID,
-	  MGR_REL_XS_PATH);
-  ctrlServExp = libxenvchan_client_init(NULL, cmdArgsVal.serverDomID,
-					xsServerPath);
-
-  // Handle any error from libxenvchan_client_init.
-  if (!ctrlServExp) {
-    char * lclErrStr = strerror(errno);
-    fprintf(stderr, "Error: %s: libxenvchan_client_init: domId=%d, xsPath=%s.\n",
-	    lclErrStr, cmdArgsVal.serverDomID, xsServerPath);
-    exit(1);
-  }
-  ctrlServExp->blocking = 1; // Block for each vchan IO ?
-
-  // Setup Client connection
-  sprintf(xsClientPath, "/local/domain/%d/%s", cmdArgsVal.clientDomID,
-	  MGR_REL_XS_PATH);
-  ctrlClientExp = libxenvchan_client_init(NULL, cmdArgsVal.clientDomID,
-  					  xsClientPath);
-
-  // Handle any error from libxenvchan_client_init.
-  if (!ctrlClientExp) {
-    char * lclErrStr = strerror(errno);
-    fprintf(stderr, "Error: %s: libxenvchan_client_init: domId=%d, xsPath=%s.\n",
-	    lclErrStr, cmdArgsVal.clientDomID, xsClientPath);
-    libxenvchan_close(ctrlServExp);
-    exit(1);
-  }
-  ctrlClientExp->blocking = 1; // Block for each vchan IO ?
-
-  // Tell the serverExp1 what the clientExp1 domain id is.
-  sprintf(domIdStr, domIdFmt, cmdArgsVal.clientDomID);
-  domIdStr[DOMAIN_ID_CHAR_LEN] = 0; // terminate the string.
-  writeSize = libxenvchan_write(ctrlServExp, domIdStr, DOMAIN_ID_CHAR_LEN);
+  writeSize = libxenvchan_write(chan, domIdStr, DOMAIN_ID_CHAR_LEN);
   if (writeSize < 0) {
     perror("vchan serverExp1 write");
     exit(1);
@@ -233,28 +182,88 @@ int main(int argc, char **argv)
     perror("write clientExp1 failed to write whole buffer.\n");
     exit(1);
   }
+}
 
+//####################################################################
+
+int main(int argc, char **argv)
+{
+  struct libxenvchan **txClientExp;
+  char domIdStr[DOMAIN_ID_CHAR_LEN + 1];
+  char domIdFmt[5];
+  char path[128];
+  int i,largestFd=-1, tmp=0, j;
+  xc_interface * interface;
+  int maxNumDoms= 0;
+  int currentNumDoms;
+  xc_dominfo_t *domains; 
+  fd_set readfds;
+  int val = 10;
+
+  fprintf(stderr, "mgrExp1: starting...\n");
+
+   sprintf(domIdFmt, "%%% dd", DOMAIN_ID_CHAR_LEN);
+   printf("%%% dd", DOMAIN_ID_CHAR_LEN);
+
+   // open interface to get data
+   interface = xc_interface_open(NULL,NULL,XC_OPENFLAG_NON_REENTRANT);
+
+   //find how many domains can be supported
+   maxNumDoms = xc_get_max_nodes(interface);
+   fprintf(stdout,"Maximum number of doms: %d\n", maxNumDoms);
+
+   domains = (xc_dominfo_t *)malloc(maxNumDoms * sizeof(xc_dominfo_t));
+   txClientExp = (struct libxenvchan **)malloc(maxNumDoms * sizeof(struct libxenvchan*));
+
+   //get currently running domain information
+   currentNumDoms = xc_domain_getinfo(interface,1,maxNumDoms, domains);
+   fprintf(stdout,"Current number of Doms: %d\n",currentNumDoms);
+
+   //Act as a client to each of the /local/data/domain/[id]/mgrVchan_0
+   for (i = 0; i < currentNumDoms; i++){
+      txClientExp[i] = createTransmitChanP(NULL,domains[i].domid, MGR_DOMAIN_ID, MGR_REL_XS_PATH);
+      fprintf(stdout,"client init for %d\n",domains[i].domid);
+      tmp = libxenvchan_fd_for_select(txClientExp[i]);
+      FD_SET(tmp, &readfds);
+
+      if (tmp > largestFd){
+        largestFd = tmp;
+      }
+      sleep(2);
+      sprintf(domIdStr, domIdFmt, val);
+      domIdStr[DOMAIN_ID_CHAR_LEN] = 0; // terminate the string.
+      fprintf(stdout,"MGR: Sending %s to %d\n",domIdStr, domains[i].domid);
+      sendId(txClientExp[i],domIdStr);
+   }
+  /* 
+   //wait until something happens
+   for(;;){
+      tmp = select(largestFd+1, &readfds,NULL,NULL,NULL);
+      printf("We received something!\n"); 
+      sleep(2);
+   }   
+*/
+  
+  exit(1);
+  /*
+  // Tell the serverExp1 what the clientExp1 domain id is.
+  for (i =0; i< 2; i++){
+      sprintf(domIdStr, domIdFmt, domains[(i+1)% currentNumDoms].domid);
+      domIdStr[DOMAIN_ID_CHAR_LEN] = 0; // terminate the string.
+      fprintf(stdout,"MGR: Sending %s to %d\n",domIdStr, domains[i].domid);
+      sendId(txClientExp[i],domIdStr);
+  }
   // Tell the clientExp1 what the serverExp1 domain id is.
   sprintf(domIdStr, domIdFmt, cmdArgsVal.serverDomID);
   domIdStr[DOMAIN_ID_CHAR_LEN] = 0; // terminate the string.
-  writeSize = libxenvchan_write(ctrlClientExp, domIdStr, DOMAIN_ID_CHAR_LEN);
-  if (writeSize < 0) {
-    perror("vchan clientExp1 write");
-    exit(1);
+  for (i = 0; i < 2; i++){
+    sendId(rxClientExp[i], domIdStr);
   }
-  if (writeSize == 0) {
-    perror("write clientExp1 size=0?\n");
-    exit(1);
-  }
-  if (writeSize != DOMAIN_ID_CHAR_LEN) {
-    perror("write clientExp1 failed to write whole buffer.\n");
-    exit(1);
-  }
-
 
   // Clean up before exit.
   libxenvchan_close(ctrlServExp);
-  libxenvchan_close(ctrlClientExp);
-
+  libxenvchan_close(rxClientExp[0]);
+  libxenvchan_close(rxClientExp[1]);
+*/
   return 0;
 }

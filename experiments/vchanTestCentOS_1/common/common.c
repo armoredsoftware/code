@@ -27,34 +27,11 @@
  * the mgr.
  * return - the domainID. On any failure exit(1) is called.
  **/
-int readSubExp1DomainID( xentoollog_logger * xc_logger) {
-  int mgrDomainID = MGR_DOMAIN_ID;
+int readSubExp1DomainID( xentoollog_logger * xc_logger, struct libxenvchan * ctrl) {
   char buf[DOMAIN_ID_CHAR_LEN + 1];
   int size = DOMAIN_ID_CHAR_LEN;
   char * invalidChar;
   int domainID;
-  struct libxenvchan * ctrl = 0;
-
-  fprintf(stdout, "serverExp1: mgrExp1 domainID=%d.\n", mgrDomainID);
-  fprintf(stdout, "serverExp1: mgrExp1 xs path='%s'.\n", MGR_REL_XS_PATH );
-
-  //We act as a vchan server when talking to the mgrExp1 application.
-  ctrl = libxenvchan_server_init(xc_logger, mgrDomainID,
-				 MGR_REL_XS_PATH, 0, 0);
-
-  if (ctrl == NULL) {
-    // We had an error trying to initialise the server vchan.
-    char * lclErrStr = strerror(errno);
-    fprintf(stderr, "Error: %s: libxenvchan_server_init: domId=%d, xsPath=%s.\n",
-	    lclErrStr, mgrDomainID, MGR_REL_XS_PATH);
-    if(errno == ENOENT) {
-      fprintf(stderr, "    kernel module xen_gntalloc (/dev/xen/gntalloc) or xen_evtchn (/dev/xen/evtchn) may not be running.\n");
-    }
-    exit(1);
-  }
-  ctrl->blocking = 1; // Block for each vchan IO ?
-
-
 
   // Read the subExp1 domain ID from mgrExp1 vchan client.
   // The domainID has to be right justified for the following error
@@ -66,14 +43,14 @@ int readSubExp1DomainID( xentoollog_logger * xc_logger) {
   if (size < 0) {
     // There was a significant error. Abort.
     fprintf(stderr, "libxenvchan_read return=%d.\n", size);
-    perror("serverExp1: read failed for mgrExp1.");
+    perror("readSubDomain: read failed for mgrExp1.");
     libxenvchan_close(ctrl);
     exit(1);
   }
 
   // Did we get all of the characters of the domainID number string?
   if (size != DOMAIN_ID_CHAR_LEN) {
-    fprintf(stderr, "serverExp1: We expected to read %d characters for the"
+    fprintf(stderr, "readSubDomain: We expected to read %d characters for the"
 	    "subExp1 domain ID but got %d from mgrExp1\n",
 	    DOMAIN_ID_CHAR_LEN, size);
     libxenvchan_close(ctrl);
@@ -85,63 +62,87 @@ int readSubExp1DomainID( xentoollog_logger * xc_logger) {
   domainID = strtol(buf, &invalidChar, 10);
 
   if ( *invalidChar != '\0' ) {
-    fprintf(stderr, "serverExp1: There was an invalid character in the domainID. The invalid portion of the domainID is '%s'.\n", invalidChar);
+    fprintf(stderr, "readSubDomain: There was an invalid character in the domainID. The invalid portion of the domainID is '%s'.\n", invalidChar);
     libxenvchan_close(ctrl);
     exit(1);
     
   }
 
-  fprintf(stdout, "serverExp1: clientExp1 domainID=%d.\n", domainID);
-
-  libxenvchan_close(ctrl);
-
   return domainID;
 }
 //####################################################################
+
 struct libxenvchan * createReceiveChan (xentoollog_logger * xc_logger, int id){
+  return createReceiveChanP(xc_logger,id,NULL);
+}
+
+//####################################################################
+struct libxenvchan * createReceiveChanP (xentoollog_logger * xc_logger, int id, char * path){
   struct libxenvchan *rxCtrl=0;
+  char  p[256];
+
+  if (!path){
+   sprintf(p,"%s", SERV_REL_RX_XS_PATH);
+  }else{
+    sprintf (p,"%s",path);
+  }
+  sprintf(p, "%s_%d",p,id);
+
   // We act as a server for our RX.
-  fprintf(stdout, "clientExp1: vchan init for xs=%s to domId=%d,\n",
-	  SERV_REL_RX_XS_PATH, id );
+  fprintf(stdout, "receiveChan: vchan init for xs=%s to domId=%d,\n",
+	  p, id );
   rxCtrl = libxenvchan_server_init(xc_logger,
-                                   id, SERV_REL_RX_XS_PATH, 0, 0);
+                                   id, p, 0, 0);
 
   if(rxCtrl == NULL) {
     // We had an error trying to initialise the client vchan.
     char * lclErrStr = strerror(errno);
     fprintf(stderr, "Error: %s: libxenvchan_client_init: domId=%d, xsPath=%s.\n",
-            lclErrStr, id, SERV_REL_RX_XS_PATH);
+            lclErrStr, id, p);
     if(errno == ENOENT) {
       fprintf(stderr, "    kernel module xen_gntalloc (/dev/xen/gntalloc) or xen_evtchn (/dev/xen/evtchn) may not be running.\n");
     }
     exit(1);
   }
   rxCtrl->blocking = 1; // Block for each vchan IO ?
-
+  
   return rxCtrl;
 
 }
 //####################################################################
 
-struct libxenvchan * createTransmitChan(xentoollog_logger * xc_logger, int id){
+struct libxenvchan * createTransmitChan(xentoollog_logger * xc_logger, int destId, int sourceId){
+  return createTransmitChanP(xc_logger,destId,sourceId,NULL);
+}
 
+//####################################################################
+
+struct libxenvchan * createTransmitChanP(xentoollog_logger * xc_logger, int destId, int sourceId, char * path){
   struct libxenvchan *txCtrl=0;
   char serverRxXS [256]; // xenStore path for the server's receive.
-
-  sprintf(serverRxXS, "/local/domain/%d/%s", id,
-          SERV_REL_RX_XS_PATH);
+  char  p[256];
+  
+  if (!path){
+    sprintf (p,"%s",SERV_REL_RX_XS_PATH);
+  }else{
+    sprintf (p,"%s",path);
+  }
+  
+  sprintf(p, "%s_%d",p,sourceId);
+  sprintf(serverRxXS, "/local/domain/%d/%s", destId,
+          p);
 
   // We act as a client so the servers Rx is our Tx.
-  fprintf(stdout, "clientExp1: vchan init for xs=%s to domId=%d,\n",
-          serverRxXS, id );
+  fprintf(stdout, "transmitChan: vchan init for xs=%s to domId=%d,\n",
+          serverRxXS, sourceId );
   txCtrl = libxenvchan_client_init((xentoollog_logger *)xc_logger,
-                                   id, serverRxXS);
+                                   destId, serverRxXS);
 
   if(txCtrl == NULL) {
     // We had an error trying to initialise the client vchan.
     char * lclErrStr = strerror(errno);
     fprintf(stderr, "Error: %s: libxenvchan_client_init: domId=%d, xsPath=%s.\n",
-            lclErrStr, id, serverRxXS);
+            lclErrStr, destId, serverRxXS);
     if(errno == ENOENT) {
       fprintf(stderr, "    kernel module xen_gntalloc (/dev/xen/gntalloc) or xen_evtchn (/dev/xen/evtchn) may not be running.\n");
     }
@@ -150,6 +151,7 @@ struct libxenvchan * createTransmitChan(xentoollog_logger * xc_logger, int id){
   txCtrl->blocking = 1; // Block for each vchan IO ?
 
 return txCtrl;
+
 }
 
 

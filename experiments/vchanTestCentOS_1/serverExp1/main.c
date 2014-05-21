@@ -17,6 +17,7 @@
 #include <time.h>
 
 #include <libxenvchan.h>
+#include <xenstore.h>
 
 #include <exp1Common.h>
 /*
@@ -189,13 +190,18 @@ int checkClientResponse(xentoollog_logger * xc_logger, struct libxenvchan * ctrl
 
 int main(int argc, char **argv)
 {
-  int clientExp1DomainId; // domainID of the clientExp1 VM. provided by mgrExp1.
+  int clientExp1DomainId[2]; // domainID of the clientExp1 VM. provided by mgrExp1.
+  int selfId;   //DomainID of this node;
   xentoollog_logger_stdiostream * xc_logger;
-  struct libxenvchan * txCtrl = 0;
-  struct libxenvchan * rxCtrl = 0;
+  struct libxenvchan * txCtrl[2];
+  struct libxenvchan *rxCtrl[2];
+  struct libxenvchan *mgrCtrl= 0;
+  struct xs_handle *handle= 0;
   int servCount;
   int clientCount;
   int vchanStatus;
+  int i;
+  unsigned int tmp;
 
   if (argc != 1) {
     fprintf(stdout, "ERROR: serverExp1: no arguments are given to this application.\n");
@@ -211,26 +217,39 @@ int main(int argc, char **argv)
     printf("!!! Error Failed to create libxc logger.");
     exit(1);
   }
+  handle = xs_open(XS_OPEN_READONLY);
+  //get our domID
+  selfId =(int) strtol((char *)xs_read(handle, XBT_NULL, "domid", &tmp), (char**)NULL,10);
+  fprintf(stdout,"Got my DomainId: %d\n",selfId);
+
+   mgrCtrl = createReceiveChanP((xentoollog_logger *)xc_logger, MGR_DOMAIN_ID,MGR_REL_XS_PATH);
+
+   libxenvchan_wait(mgrCtrl);
 
   // Get the domID of the clientExp1 from the mgrExp1
-  clientExp1DomainId = readSubExp1DomainID((xentoollog_logger *)xc_logger);
+  clientExp1DomainId[0] = readSubExp1DomainID((xentoollog_logger *)xc_logger, mgrCtrl);
+  fprintf(stdout,"Client1: %d\n",clientExp1DomainId[0]);
+  clientExp1DomainId[1] = readSubExp1DomainID((xentoollog_logger *)xc_logger, mgrCtrl);
+  fprintf(stdout,"Client2: %d\n",clientExp1DomainId[1]);
 
   //setup receive chan as server
-  rxCtrl = createReceiveChan((xentoollog_logger *)xc_logger, clientExp1DomainId); 
+  rxCtrl[0] = createReceiveChan((xentoollog_logger *)xc_logger, clientExp1DomainId[0]); 
+  rxCtrl[1] = createReceiveChan((xentoollog_logger *)xc_logger, clientExp1DomainId[1]); 
 
 
   sleep(2);
 
   //setup transmit to client's receive chan as a client
-  txCtrl = createTransmitChan((xentoollog_logger *)xc_logger, clientExp1DomainId); 
+  txCtrl[0] = createTransmitChan((xentoollog_logger *)xc_logger, clientExp1DomainId[0],selfId); 
+  txCtrl[1] = createTransmitChan((xentoollog_logger *)xc_logger, clientExp1DomainId[1],selfId); 
 
   // Do forever.
   servCount = 1;
   for(;;) {
 
-    sleep(1);
+    sleep(5);
 
-    // Send the count number to the client.
+/*    // Send the count number to the client.
     fprintf(stdout, "servExp1: send %d to client.\n", servCount);
     vchanStatus = sendCountToClient((xentoollog_logger *)xc_logger, txCtrl, servCount);
 
@@ -238,21 +257,23 @@ int main(int argc, char **argv)
       fprintf(stderr, "Failed to send message to client.\n");
       exit(1);
     }
+*/
+   for (i = 0; i < 2; i++){
+      vchanStatus = checkClientResponse((xentoollog_logger *)xc_logger, rxCtrl[i], &clientCount);
+      if (vchanStatus != 0) {
+        fprintf(stderr, "Failed to receive message from client.\n");
+        exit(1);
+      }
 
-    vchanStatus = checkClientResponse((xentoollog_logger *)xc_logger, rxCtrl, &clientCount);
-    if (vchanStatus != 0) {
-      fprintf(stderr, "Failed to receive message from client.\n");
-      exit(1);
-    }
-
-    fprintf(stdout, "servExp1: received %d from client.\n\n", clientCount);    
-
+      fprintf(stdout, "servExp1: received %d from client%d.\n\n", clientCount, clientExp1DomainId[i]);    
+   }
     servCount++;
   }
-
-  libxenvchan_close(txCtrl);
-  libxenvchan_close(rxCtrl);
-
+  for ( i = 0; i < 2; i++){
+    libxenvchan_close(txCtrl[i]);
+    libxenvchan_close(rxCtrl[i]);
+  }
+  libxenvchan_close(mgrCtrl);
   xtl_logger_destroy((xentoollog_logger *)xc_logger);
 
   return 0;

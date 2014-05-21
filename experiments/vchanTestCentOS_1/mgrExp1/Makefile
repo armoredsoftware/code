@@ -26,7 +26,7 @@ all: $(EXP_ROOT)/bin/$(APP)
 
 
 $(APP): $(APP_OBJS)
-	$(CC) $(LDFLAGS) -o $@ $(APP_OBJS) $(LDLIBS) $(APPEND_LDFLAGS)
+	$(CC) $(EXP_ROOT)/common/common.c $(LDFLAGS) -o $@ $(APP_OBJS) $(LDLIBS) $(APPEND_LDFLAGS)
 
 $(EXP_ROOT)/bin/$(APP): $(APP)
 	cp $< $@
