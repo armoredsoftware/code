@@ -194,22 +194,22 @@ int sendClientResponse(xentoollog_logger * xc_logger, struct libxenvchan * txCtr
 
 int main(int argc, char **argv)
 {
-  struct libxenvchan *rxCtrl = 0;
-  struct libxenvchan *txCtrl = 0;
+ // struct libxenvchan *rxCtrl = 0;
+ // struct libxenvchan *txCtrl = 0;
   struct libxenvchan *mgrCtrl = 0;
   struct xs_handle   *handle= 0;
   int mgrDomainID = MGR_DOMAIN_ID;
-  int serverExp1DomainId; // domainID of the serverExp1 VM. provided by mgrExp1.
+  //int serverExp1DomainId; // domainID of the serverExp1 VM. provided by mgrExp1.
   int selfId; // domainID of this node;
   xentoollog_logger_stdiostream * xc_logger;
-  int servCount;
-  int clientCount;
-  int  vchanStatus;
-  int mgrChanFd;
-  fd_set readfds;
-  unsigned int tmp;
-  char msg[256];
-  int i =0;
+ // int servCount;
+ // int clientCount;
+  //int  vchanStatus;
+  //int mgrChanFd;
+  //fd_set readfds;
+  int tmp;
+  //char msg[256];
+  //int i =0;
   
 
   if (argc != 1) {
@@ -236,20 +236,26 @@ int main(int argc, char **argv)
    
   // create a channel for Dom0 to communicate with us
   mgrCtrl = createReceiveChanP((xentoollog_logger *)xc_logger, mgrDomainID,MGR_REL_XS_PATH);
-
-  mgrChanFd = libxenvchan_fd_for_select(mgrCtrl);
-  for (i = 0; i < 2; i++){
-    FD_ZERO(&readfds);
-    FD_SET(mgrChanFd, &readfds);
-
-
-    select( mgrChanFd +1 ,&readfds, NULL, NULL,NULL); 
-    printf("DONE WAITING\n");
-    //wait until manager sets up. 
-    //libxenvchan_wait(mgrCtrl);
-    printf("Received MSG:%d\n", readSubExp1DomainID((xentoollog_logger *)xc_logger, mgrCtrl));
- 
+  sendClientResponse((xentoollog_logger *)xc_logger, mgrCtrl, selfId);
+  for(;;){
+    scanf("%d", &tmp);
+    fprintf(stdout, "Got val: %d\n",tmp);
+    sendClientResponse((xentoollog_logger *)xc_logger, mgrCtrl, tmp);
   }
+/*
+  mgrChanFd = libxenvchan_fd_for_select(mgrCtrl);
+
+  FD_ZERO(&readfds);
+  FD_SET(mgrChanFd, &readfds);
+
+
+  select( mgrChanFd +1 ,&readfds, NULL, NULL,NULL); 
+  printf("DONE WAITING\n");
+ */
+  //wait until manager sets up. 
+  //libxenvchan_wait(mgrCtrl);
+  printf("Received MSG:%d\n", readSubExp1DomainID((xentoollog_logger *)xc_logger, mgrCtrl));
+ 
 
 
 

@@ -167,6 +167,48 @@ void processArgs(int argc, char **argv, cmdArgs * cmdArgsVal) {
 }
 
 //####################################################################
+
+int checkClientResponse(xentoollog_logger * xc_logger, struct libxenvchan * ctrl,
+                        int * count) {
+  int result = 0;
+  int size;
+  char buf[256];
+  char * invalidChar;
+
+  size = EXP1_MSG_LEN;
+
+  size = libxenvchan_read(ctrl, buf, size);
+
+  // Was there a system error?
+  if (size < 0) {
+    // There was a significant error. Abort.
+    fprintf(stderr, "libxenvchan_read return=%d.\n", size);
+    perror("serverExp1: read failed for clientExp1.");
+    exit(1);
+  }
+
+  // Did we get all of the characters in the message.
+  if (size != EXP1_MSG_LEN) {
+    fprintf(stderr, "serverExp1: We expected to read %d characters for the"
+            "clientExp1 but got %d from clientExp1\n",
+            EXP1_MSG_LEN, size);
+    exit(1);
+  }
+
+  buf[EXP1_MSG_LEN] = 0; // put null at end of string so we have a valid C string.
+  // Convert the string to an integer.
+  *count = strtol(buf, &invalidChar, 10);
+
+  if ( *invalidChar != '\0' ) {
+    fprintf(stderr, "serverExp1: There was an invalid character in the msg count. The invalid portion of the msg count is '%s'.\n", invalidChar);
+    exit(1);
+
+  }
+
+  return result;
+}
+
+//####################################################################
 void sendId(struct libxenvchan * chan, char * domIdStr){
   int writeSize;
   writeSize = libxenvchan_write(chan, domIdStr, DOMAIN_ID_CHAR_LEN);
@@ -191,14 +233,13 @@ int main(int argc, char **argv)
   struct libxenvchan **txClientExp;
   char domIdStr[DOMAIN_ID_CHAR_LEN + 1];
   char domIdFmt[5];
-  char path[128];
-  int i,largestFd=-1, tmp=0, j;
+  int i,largestFd=-1, tmp=0;
   xc_interface * interface;
   int maxNumDoms= 0;
   int currentNumDoms;
+  int *fds;
   xc_dominfo_t *domains; 
   fd_set readfds;
-  int val = 10;
 
   fprintf(stderr, "mgrExp1: starting...\n");
 
@@ -214,35 +255,42 @@ int main(int argc, char **argv)
 
    domains = (xc_dominfo_t *)malloc(maxNumDoms * sizeof(xc_dominfo_t));
    txClientExp = (struct libxenvchan **)malloc(maxNumDoms * sizeof(struct libxenvchan*));
-
+   fds = (int*)malloc(maxNumDoms * sizeof(int));
    //get currently running domain information
    currentNumDoms = xc_domain_getinfo(interface,1,maxNumDoms, domains);
    fprintf(stdout,"Current number of Doms: %d\n",currentNumDoms);
+   
+   FD_ZERO(&readfds);
 
    //Act as a client to each of the /local/data/domain/[id]/mgrVchan_0
    for (i = 0; i < currentNumDoms; i++){
       txClientExp[i] = createTransmitChanP(NULL,domains[i].domid, MGR_DOMAIN_ID, MGR_REL_XS_PATH);
       fprintf(stdout,"client init for %d\n",domains[i].domid);
-      tmp = libxenvchan_fd_for_select(txClientExp[i]);
-      FD_SET(tmp, &readfds);
+      fds[i] = libxenvchan_fd_for_select(txClientExp[i]);
+      FD_SET(fds[i], &readfds);
 
-      if (tmp > largestFd){
-        largestFd = tmp;
+      if (fds[i] > largestFd){
+        largestFd = fds[i];
       }
-      sleep(2);
-      sprintf(domIdStr, domIdFmt, val);
-      domIdStr[DOMAIN_ID_CHAR_LEN] = 0; // terminate the string.
-      fprintf(stdout,"MGR: Sending %s to %d\n",domIdStr, domains[i].domid);
-      sendId(txClientExp[i],domIdStr);
    }
-  /* 
+
+   
    //wait until something happens
    for(;;){
+      fprintf(stdout,"Waiting on select\n");
       tmp = select(largestFd+1, &readfds,NULL,NULL,NULL);
-      printf("We received something!\n"); 
-      sleep(2);
+
+      printf("We received something! ReturnVal: %d\n",tmp); 
+      for (i = 0; i < currentNumDoms; i++){
+        if (FD_ISSET(fds[i],&readfds)){
+           fprintf(stdout,"Waiting on read\n");
+           checkClientResponse(NULL,txClientExp[i], &tmp);
+           fprintf(stdout,"We Received: %d\n", tmp);
+        } 
+        FD_SET(fds[i], &readfds);   
+      }
    }   
-*/
+
   
   exit(1);
   /*
