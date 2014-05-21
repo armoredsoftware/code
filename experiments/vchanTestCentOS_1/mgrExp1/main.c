@@ -283,7 +283,7 @@ int main(int argc, char **argv)
       printf("We received something! ReturnVal: %d\n",tmp); 
       for (i = 0; i < currentNumDoms; i++){
         if (FD_ISSET(fds[i],&readfds)){
-           fprintf(stdout,"Waiting on read\n");
+           fprintf(stdout,"Waiting on read for domain: %d\n", domains[i].domid);
            checkClientResponse(NULL,txClientExp[i], &tmp);
            fprintf(stdout,"We Received: %d\n", tmp);
         } 
