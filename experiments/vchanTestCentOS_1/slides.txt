@@ -1,0 +1,100 @@
+# libvchan or libxenvchan #
+
+* For communication between Xen domains
+  * Utilizes Xen Store
+* Uses server-client model
+  * One VM is server, another VM is client.
+  * Server has to be initialized before client can initialize
+* Simple byte array transport
+  * packet or stream
+* Four different routines used
+  * Init (one for client, one for server)
+    * Arguments include Xen Store path (server side path) and domain ID
+      of domain to communicate with.
+  * write (can be blocked)
+  * read (can be blocked)
+  * close
+
+# libvchan mechanics #
+
+* Uses ring to store unread messages.
+* Message storage is on server side's Xen Store
+  * at server initialization the xen store path is specified.
+  * client (specified by domain ID) is given permission to read and write
+    at the server's xen store path.
+* unblocking notification of read/write is handled by xen hypervisor event
+  notifications.
+
+# C language API, Requirements #
+
+Library: /usr/lib64/libxenvchan.so.1.0.0
+         Requires: libxenctrl.so
+Include: /usr/include/libxenvchan.h (from xen-devel RPM)
+Kernel: Must be xen enable kernel
+Kernel Modules: Must have the following modules running before libxenvchan will
+funciton
+* Server
+  * xen_gntalloc
+  * xen_gntdev
+* Client
+  * xen_gntalloc
+  * xen_evtchn
+
+# C lanuage API, Server #
+
+struct libxenvchan *libxenvchan_server_init(xentoollog_logger *logger, int domain, const char* xs_path, size_t read_min, size_t write_min);
+  - logger - for reporting libxc errors, warnings, debug info. Can be null.
+  - domain - the domain ID of the client that the server wants to talk to.
+             This is used to grant permisions in xen store on xs_path 
+             for the specified client domain ID.
+  - xs_path - The Xen Store path to use for transfering data and events.
+              This may be a relative path. Example "data/myClientVchan".
+  - send_min - The minimum size of the send ring (left). Value of 0 causes
+             default min to be used.
+  - send_max - The maximum size of the send ring (right). Value of 0 causes
+             the default max to be used. 
+  - return - The structure for holding information needed by the read and
+             write routines. If NULL then there was an error and the error
+             will be in the unix variable 'errno'. The struct is freed when the close routine is called.
+
+# C language API, Client #
+
+struct libxenvchan *libxenvchan_client_init(xentoollog_logger *logger, int domain, const char* xs_path);
+  - logger - for reporting libxc errors, warnings, debug info. Can be null.
+  - domain - the domain ID of the server that the server wants to talk to
+  - xs_path - The Xen Store path to use for transfering data and events.
+              This may be an absolute path. Example "/local/domain/<serverId>/data/myClientVchan".
+
+
+# C language API, struct libxenvchan #
+
+  * ctrl->blocking = 1; // Block for each vchan IO
+    * Alternative is to use function libxenvchan_wait before a read or write.
+
+# C language API, read/write #
+
+* read and write are stream based.
+* send and recv are packet based.
+
+int libxenvchan_write(struct libxenvchan *ctrl, const void *data, size_t size);
+  * ctrl - the struct libxenvchan returned by libxenvchan_client_init or libxenvchan_server_init
+  * data - array of bytes to send
+  * size - the length of 'data'.
+  * return - -1 if there is an error, otherwise the amount of 'data' send. Could be less than 'size' if the ring becomes full.
+
+int libxenvchan_read(struct libxenvchan *ctrl, void *data, size_t size);
+  * ctrl - the struct libxenvchan returned by libxenvchan_client_init or libxenvchan_server_init
+  * data - array of bytes to receive
+  * size - the maximum length of 'data'.
+  * return - -1 if there is an error, otherwise the amount of 'data' received.
+
+
+# C language API, other functions #
+
+libxenvchan_recv - packet based read (fixed length)
+libxenvcahn_send - packet based write (fixed length).
+libxenvchan_wait - can be used in place of setting ctrl->blocking = 1;
+libxenvchan_fd_for_select - get fd that can be used with unix 'select' function. This is useful for setting a timeout for read and write.
+libxenvchan_is_open - check status of vchan channel (closed, open, no client)
+libxenvchan_data_read - how much data is available (like peek)
+libxenvchan_buffer_space - remaining send space available before blocking.
