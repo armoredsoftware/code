@@ -236,7 +236,7 @@ int main(int argc, char **argv)
    
   // create a channel for Dom0 to communicate with us
   mgrCtrl = createReceiveChanP((xentoollog_logger *)xc_logger, mgrDomainID,MGR_REL_XS_PATH);
-  sendClientResponse((xentoollog_logger *)xc_logger, mgrCtrl, selfId);
+ // sendClientResponse((xentoollog_logger *)xc_logger, mgrCtrl, selfId);
   for(;;){
     scanf("%d", &tmp);
     fprintf(stdout, "Got val: %d\n",tmp);
