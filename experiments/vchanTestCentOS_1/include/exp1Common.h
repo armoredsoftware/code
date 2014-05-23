@@ -36,5 +36,9 @@ struct libxenvchan * createReceiveChanP (xentoollog_logger * xc_logger, int id, 
 
 struct libxenvchan * createTransmitChan(xentoollog_logger * xc_logger, int destId, int sourceId);
 struct libxenvchan * createTransmitChanP(xentoollog_logger * xc_logger, int destId, int sourceId, char * optional_rel_path);
+int sendClientResponse(xentoollog_logger * xc_logger, struct libxenvchan * txCtrl, int val);
+int checkClientResponse(xentoollog_logger * xc_logger, struct libxenvchan * ctrl, int * count);
+int getDomId(void);
+xentoollog_logger_stdiostream * createDebugLogger(void);
 
 #endif

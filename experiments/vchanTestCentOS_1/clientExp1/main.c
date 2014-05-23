@@ -123,7 +123,7 @@ int receiveCountFromServer(xentoollog_logger * xc_logger,
   size = EXP1_MSG_LEN;
 
   // Read the correct number of characters from the server.
-  size = libxenvchan_read(rxCtrl, buf, size);
+  size = libxenvchan_recv(rxCtrl, buf, size);
 
   // Was there a system error?
   if (size < 0) {
@@ -154,41 +154,6 @@ int receiveCountFromServer(xentoollog_logger * xc_logger,
   return result;
 }
 
-// ##################################################################
-// Send a count to server over a vchan.
-// xc_logger - may be null
-// txCtrl - vchan control structure created by call to libxenvchan_server_init
-// clientCount - the msg count write to  the vchan server.
-// return - non 0 is an error.
-int sendClientResponse(xentoollog_logger * xc_logger, struct libxenvchan * txCtrl,
-		       int clientCount) {
-  int result = 0;
-  int writeSize;
-  char buf[EXP1_MSG_LEN + 1];
-  char fmt[256];
-
-  /* Create the format for writing the message. */
-  // This really should be done once during initialization
-  sprintf(fmt, "%% %dd", EXP1_MSG_LEN); 
-
-  sprintf(buf, fmt, clientCount);
-
-  writeSize = libxenvchan_write(txCtrl, buf, EXP1_MSG_LEN);
-  if (writeSize < 0) {
-    perror("vchan to serverExp1 write");
-    exit(1);
-  }
-  if (writeSize == 0) {
-    perror("write serverExp1 size=0?");
-    exit(1);
-  }
-  if (writeSize != EXP1_MSG_LEN) {
-    perror("write writeExp1 failed to write whole buffer.");
-    exit(1);
-  }
-
-  return result;
-}
 
 //####################################################################
 
@@ -205,8 +170,8 @@ int main(int argc, char **argv)
  // int servCount;
  // int clientCount;
   //int  vchanStatus;
-  //int mgrChanFd;
-  //fd_set readfds;
+  int mgrChanFd;
+  fd_set readfds;
   int tmp;
   //char msg[256];
   //int i =0;
@@ -236,28 +201,39 @@ int main(int argc, char **argv)
    
   // create a channel for Dom0 to communicate with us
   mgrCtrl = createReceiveChanP((xentoollog_logger *)xc_logger, mgrDomainID,MGR_REL_XS_PATH);
- // sendClientResponse((xentoollog_logger *)xc_logger, mgrCtrl, selfId);
-  for(;;){
-    scanf("%d", &tmp);
-    fprintf(stdout, "Got val: %d\n",tmp);
-    sendClientResponse((xentoollog_logger *)xc_logger, mgrCtrl, tmp);
-  }
-/*
   mgrChanFd = libxenvchan_fd_for_select(mgrCtrl);
 
   FD_ZERO(&readfds);
   FD_SET(mgrChanFd, &readfds);
 
+/*
+  for(;;){
+    scanf("%d", &tmp);
+    fprintf(stdout, "Got val: %d\n",tmp);
+    sendClientResponse((xentoollog_logger *)xc_logger, mgrCtrl, tmp);
+  }
+*/
+   for(;;){
+      fprintf(stdout,"Waiting on select\n");
+      tmp = select(mgrChanFd+1, &readfds,NULL,NULL,NULL);
 
-  select( mgrChanFd +1 ,&readfds, NULL, NULL,NULL); 
-  printf("DONE WAITING\n");
- */
-  //wait until manager sets up. 
-  //libxenvchan_wait(mgrCtrl);
-  printf("Received MSG:%d\n", readSubExp1DomainID((xentoollog_logger *)xc_logger, mgrCtrl));
- 
+      printf("We received something! ReturnVal: %d\n",tmp); 
+        if (FD_ISSET(mgrChanFd,&readfds)){
+           if(libxenvchan_data_ready(mgrCtrl)> 0){
+             fprintf(stdout,"Waiting on read from domain: %d\n",0);
+             checkClientResponse(NULL,mgrCtrl, &tmp);
+             fprintf(stdout,"We Received: %d\n", tmp);
+             fprintf(stdout,"Send a response\n");
+             scanf("%d", &tmp);
+             sendClientResponse((xentoollog_logger *)xc_logger, mgrCtrl, tmp);
+    
 
-
+           }
+        } 
+      FD_ZERO(&readfds);
+      FD_SET(mgrChanFd,&readfds);
+      sleep(2);
+   }   
 
 /*
   serverExp1DomainId = readSubExp1DomainID((xentoollog_logger *)xc_logger, mgrCtrl);

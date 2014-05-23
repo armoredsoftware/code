@@ -168,47 +168,6 @@ void processArgs(int argc, char **argv, cmdArgs * cmdArgsVal) {
 
 //####################################################################
 
-int checkClientResponse(xentoollog_logger * xc_logger, struct libxenvchan * ctrl,
-                        int * count) {
-  int result = 0;
-  int size;
-  char buf[256];
-  char * invalidChar;
-
-  size = EXP1_MSG_LEN;
-
-  size = libxenvchan_read(ctrl, buf, size);
-
-  // Was there a system error?
-  if (size < 0) {
-    // There was a significant error. Abort.
-    fprintf(stderr, "libxenvchan_read return=%d.\n", size);
-    perror("serverExp1: read failed for clientExp1.");
-    exit(1);
-  }
-
-  // Did we get all of the characters in the message.
-  if (size != EXP1_MSG_LEN) {
-    fprintf(stderr, "serverExp1: We expected to read %d characters for the"
-            "clientExp1 but got %d from clientExp1\n",
-            EXP1_MSG_LEN, size);
-    exit(1);
-  }
-
-  buf[EXP1_MSG_LEN] = 0; // put null at end of string so we have a valid C string.
-  // Convert the string to an integer.
-  *count = strtol(buf, &invalidChar, 10);
-
-  if ( *invalidChar != '\0' ) {
-    fprintf(stderr, "serverExp1: There was an invalid character in the msg count. The invalid portion of the msg count is '%s'.\n", invalidChar);
-    exit(1);
-
-  }
-
-  return result;
-}
-
-//####################################################################
 void sendId(struct libxenvchan * chan, char * domIdStr){
   int writeSize;
   writeSize = libxenvchan_write(chan, domIdStr, DOMAIN_ID_CHAR_LEN);
@@ -240,6 +199,8 @@ int main(int argc, char **argv)
   int *fds;
   xc_dominfo_t *domains; 
   fd_set readfds;
+  int dest=0;
+  int invalidEntry = 1;
 
   fprintf(stderr, "mgrExp1: starting...\n");
 
@@ -274,7 +235,34 @@ int main(int argc, char **argv)
       }
    }
 
-   
+  for(;;){
+    fprintf(stdout,"Send a mesg ([Dest] [msg])\n");
+
+    invalidEntry = 1;
+
+    while( invalidEntry){
+      for ( i = 0 ; i < currentNumDoms; i++){
+        fprintf(stdout,"%d) Domain %d -",i,domains[i].domid);
+      }
+      fprintf(stdout,"\n");
+      scanf("%d %d", &dest, &tmp);
+      if ( dest <0 || dest >= currentNumDoms){
+         fprintf(stdout, "Invalid domain: %d, Pick a domain from below\n", tmp); 
+         invalidEntry = 1;
+      }else{
+         invalidEntry = 0;
+      }
+    }
+    sendClientResponse(NULL, txClientExp[dest], tmp);
+//    libxenvchan_wait(txClientExp[dest]);
+//    libxenvchan_wait(txClientExp[dest]);
+
+//    checkClientResponse(NULL, txClientExp[dest],&tmp);
+//    fprintf(stdout,"Received: %d\n",tmp);
+  }
+
+
+  /* 
    //wait until something happens
    for(;;){
       fprintf(stdout,"Waiting on select\n");
@@ -283,14 +271,17 @@ int main(int argc, char **argv)
       printf("We received something! ReturnVal: %d\n",tmp); 
       for (i = 0; i < currentNumDoms; i++){
         if (FD_ISSET(fds[i],&readfds)){
-           fprintf(stdout,"Waiting on read for domain: %d\n", domains[i].domid);
-           checkClientResponse(NULL,txClientExp[i], &tmp);
-           fprintf(stdout,"We Received: %d\n", tmp);
+           if(libxenvchan_data_ready(txClientExp[i])> 0){
+             fprintf(stdout,"Waiting on read for domain: %d\n", domains[i].domid);
+             checkClientResponse(NULL,txClientExp[i], &tmp);
+             fprintf(stdout,"We Received: %d\n", tmp);
+           }
         } 
         FD_SET(fds[i], &readfds);   
       }
+      sleep(2);
    }   
-
+*/
   
   exit(1);
   /*
