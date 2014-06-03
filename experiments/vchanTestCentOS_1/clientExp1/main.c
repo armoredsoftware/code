@@ -172,7 +172,7 @@ int main(int argc, char **argv)
   //int  vchanStatus;
   int mgrChanFd;
   fd_set readfds;
-  //int tmp;
+  int tmp;
   char msg[256];
   int i =0;
   
@@ -215,8 +215,8 @@ int main(int argc, char **argv)
   }
 */
    for(;;){
-           if(libxenvchan_data_ready(mgrCtrl)> 0){
-             readClientMessage(NULL,mgrCtrl, msg );
+           if((tmp = libxenvchan_data_ready(mgrCtrl))> 0){
+             readClientMessage(NULL,mgrCtrl, msg, &tmp);
              fprintf(stdout,"We Received: %s\n",msg);
               for (i = 0; i < 256; i++){
                  msg[i] =' ';
