@@ -1,10 +1,7 @@
 /**
- * The client of the vchanTestCentOS_1. 
- * Put this client executable in a VM of its own.
+ * Usage: commonly used functions
  *
- * Usage: clientExp1
- *
- * NOTE: For this application to work the zen kernel modules
+ * NOTE: For this application to work the xen kernel modules
  * xen_gntalloc and xen_gntdev must be loaded prior to running the application,
  * otherwise you will get an error of "No such file or directory."
  *
@@ -38,6 +35,7 @@ xentoollog_logger_stdiostream * createDebugLogger(){
 
   return xtl_createlogger_stdiostream(stdout, XTL_DEBUG, 0);
 }
+
 
 /** Read the domainID of the subExp1 from the mgrExp1 over the
  * vChan.
@@ -139,7 +137,6 @@ struct libxenvchan * createTransmitChanP(xentoollog_logger * xc_logger, int dest
   struct libxenvchan *txCtrl=0;
   char serverRxXS [256]; // xenStore path for the server's receive.
   char  p[256];
-  
   if (!path){
     sprintf (p,"%s",SERV_REL_RX_XS_PATH);
   }else{
@@ -256,6 +253,90 @@ int sendClientResponse(xentoollog_logger * xc_logger, struct libxenvchan * txCtr
 
   return result;
 }
+
+//####################################################################
+
+int sendClientMessage(xentoollog_logger * xc_logger, struct libxenvchan * txCtrl,
+                       char * msg, int size ) {
+  int result = 0;
+  int writeSize;
+  char buf[size+1];
+  //char fmt[256];
+  int i = 0;
+
+  // Create the format for writing the message. 
+  // This really should be done once during initialization
+  //sprintf(fmt, "%% %dd", EXP1_MSG_LEN);
+
+  // sprintf(buf, fmt, clientCount);
+  fprintf(stdout,"HEXDUMP\n");
+  for (i = 0; i < size; i++){
+   fprintf(stdout,"%02x ",msg[i]);
+  }
+   fprintf(stdout,"\n");
+  strncpy(buf,msg,size);
+
+  writeSize = libxenvchan_write(txCtrl, buf, size+1);
+  if (writeSize < 0) {
+    perror("vchan to serverExp1 write");
+    exit(1);
+  }
+  if (writeSize == 0) {
+    perror("write serverExp1 size=0?");
+    exit(1);
+  }/*
+  if (writeSize != size+1) {
+    fprintf(stdout,"wrote %d totalsize %d\n",writeSize,size);
+  //  perror("write writeExp1 failed to write whole buffer.");
+   // exit(1);
+  }
+*/
+
+  return result;
+}
+
+
+//####################################################################
+//####################################################################
+int readClientMessage(xentoollog_logger * xc_logger, struct libxenvchan * ctrl,
+                        char * msg, int * sz) {
+  int result = 0;
+  int size;
+  //char * invalidChar;
+  int i = 0;
+
+  fprintf(stdout,"size:%d\n", *sz);
+  
+  size = libxenvchan_read(ctrl, msg, *sz);
+  fprintf(stdout,"Receive strlen: %d\n",size);
+  fprintf(stdout,"HEXDUMP\n");
+  for (i = 0; i < size; i++){
+   fprintf(stdout,"%02x ",msg[i]);
+  }
+   fprintf(stdout,"\n");
+
+  *sz = size;
+  // Was there a system error?
+  if (size < 0) {
+    // There was a significant error. Abort.
+    fprintf(stderr, "libxenvchan_read return=%d.\n", size);
+    perror("serverExp1: read failed for clientExp1.");
+    exit(1);
+  }
+  /*
+  // Did we get all of the characters in the message.
+  if (size != EXP1_MSG_LEN) {
+    fprintf(stderr, "serverExp1: We expected to read %d characters for the"
+            "clientExp1 but got %d from clientExp1\n",
+            EXP1_MSG_LEN, size);
+    exit(1);
+  }
+*/
+//  msg[size] = 0; // put null at end of string so we have a valid C string.
+  // Convert the string to an integer.
+  return result;
+}
+
 //####################################################################
 
 int checkClientResponse(xentoollog_logger * xc_logger, struct libxenvchan * ctrl,

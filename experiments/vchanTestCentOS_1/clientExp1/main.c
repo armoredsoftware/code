@@ -172,10 +172,11 @@ int main(int argc, char **argv)
   //int  vchanStatus;
   int mgrChanFd;
   fd_set readfds;
-  int tmp;
-  //char msg[256];
-  //int i =0;
+  //int tmp;
+  char msg[256];
+  int i =0;
   
+  exit(1);
 
   if (argc != 1) {
     fprintf(stdout, "ERROR: clientExp1: no arguments are given to this application.\n");
@@ -214,24 +215,18 @@ int main(int argc, char **argv)
   }
 */
    for(;;){
-      fprintf(stdout,"Waiting on select\n");
-      tmp = select(mgrChanFd+1, &readfds,NULL,NULL,NULL);
-
-      printf("We received something! ReturnVal: %d\n",tmp); 
-        if (FD_ISSET(mgrChanFd,&readfds)){
            if(libxenvchan_data_ready(mgrCtrl)> 0){
-             fprintf(stdout,"Waiting on read from domain: %d\n",0);
-             checkClientResponse(NULL,mgrCtrl, &tmp);
-             fprintf(stdout,"We Received: %d\n", tmp);
-             fprintf(stdout,"Send a response\n");
-             scanf("%d", &tmp);
-             sendClientResponse((xentoollog_logger *)xc_logger, mgrCtrl, tmp);
+             readClientMessage(NULL,mgrCtrl, msg );
+             fprintf(stdout,"We Received: %s\n",msg);
+              for (i = 0; i < 256; i++){
+                 msg[i] =' ';
+              }        
+ //            fprintf(stdout,"Send a response\n");
+ //             scanf("%d", &tmp);
+ //            sendClientResponse((xentoollog_logger *)xc_logger, mgrCtrl, tmp);
     
 
            }
-        } 
-      FD_ZERO(&readfds);
-      FD_SET(mgrChanFd,&readfds);
       sleep(2);
    }   
 

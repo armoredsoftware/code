@@ -144,7 +144,7 @@ int sendCountToClient(xentoollog_logger * xc_logger, struct libxenvchan * ctrl,
 }
 
 //###########################################################################
-
+/*
 int checkClientResponse(xentoollog_logger * xc_logger, struct libxenvchan * ctrl,
 			int * count) {
   int result = 0;
@@ -185,7 +185,7 @@ int checkClientResponse(xentoollog_logger * xc_logger, struct libxenvchan * ctrl
   return result;
 }
 
-
+*/
 //####################################################################
 
 int main(int argc, char **argv)

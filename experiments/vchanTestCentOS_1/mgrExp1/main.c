@@ -192,7 +192,10 @@ int main(int argc, char **argv)
   struct libxenvchan **txClientExp;
   char domIdStr[DOMAIN_ID_CHAR_LEN + 1];
   char domIdFmt[5];
-  int i,largestFd=-1, tmp=0;
+  int i,largestFd=-1;
+  char *tmp = (char *)malloc(256 *sizeof(char)+sizeof(int));
+  char *mesg = (char *)malloc(256 *sizeof(char));
+  
   xc_interface * interface;
   int maxNumDoms= 0;
   int currentNumDoms;
@@ -201,12 +204,13 @@ int main(int argc, char **argv)
   fd_set readfds;
   int dest=0;
   int invalidEntry = 1;
-
+  int ret= 0;
+  
+  
   fprintf(stderr, "mgrExp1: starting...\n");
 
    sprintf(domIdFmt, "%%% dd", DOMAIN_ID_CHAR_LEN);
-   printf("%%% dd", DOMAIN_ID_CHAR_LEN);
-
+   fprintf(stdout,"%d %d\n",(int)sizeof(int),(int)(sizeof(char)));
    // open interface to get data
    interface = xc_interface_open(NULL,NULL,XC_OPENFLAG_NON_REENTRANT);
 
@@ -224,7 +228,7 @@ int main(int argc, char **argv)
    FD_ZERO(&readfds);
 
    //Act as a client to each of the /local/data/domain/[id]/mgrVchan_0
-   for (i = 0; i < currentNumDoms; i++){
+   for (i = 0; i < 1; i++){
       txClientExp[i] = createTransmitChanP(NULL,domains[i].domid, MGR_DOMAIN_ID, MGR_REL_XS_PATH);
       fprintf(stdout,"client init for %d\n",domains[i].domid);
       fds[i] = libxenvchan_fd_for_select(txClientExp[i]);
@@ -245,15 +249,23 @@ int main(int argc, char **argv)
         fprintf(stdout,"%d) Domain %d -",i,domains[i].domid);
       }
       fprintf(stdout,"\n");
-      scanf("%d %d", &dest, &tmp);
+      fgets(tmp, 256+ sizeof(int), stdin);
+      mesg =strstr(tmp," ");
+      if ( mesg == NULL){invalidEntry=1;continue;}
+      ret = sscanf(tmp,"%d ",&dest); 
+      mesg =strstr(tmp," ")+1;
+      fprintf(stdout,"sscanf return: %d\n",ret);
       if ( dest <0 || dest >= currentNumDoms){
-         fprintf(stdout, "Invalid domain: %d, Pick a domain from below\n", tmp); 
+         fprintf(stdout, "Invalid domain: %d, Pick a domain from below\n", dest); 
          invalidEntry = 1;
       }else{
          invalidEntry = 0;
       }
     }
-    sendClientResponse(NULL, txClientExp[dest], tmp);
+    fprintf(stdout,"strlen(mesg): %d\n",(int)strlen(mesg));  
+    fprintf(stdout,"Message: %s\n",mesg);  
+
+    sendClientMessage(NULL, txClientExp[dest], mesg, strlen(mesg));
 //    libxenvchan_wait(txClientExp[dest]);
 //    libxenvchan_wait(txClientExp[dest]);
 

@@ -1,3 +1,3 @@
 #!/bin/bash
-
 ghc Client.hs ../common/common.c -L/usr/lib64 -lxenvchan -lxenctrl
+ghc Mgr.hs ../common/common.c -L/usr/lib64 -lxenvchan -lxenctrl
