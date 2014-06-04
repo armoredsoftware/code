@@ -13,7 +13,7 @@ main = do logger <- createLogger
 
                         -- 1/2 second delay
           let loop = do threadDelay(10000* 50)
-
+{-
                         putStrLn "Enter text to send as a Chat packet to Dom 1"
                         input <-getLine
                         print $ BS.length $ encode (Chat (show 0) (show 1) input)
@@ -21,12 +21,12 @@ main = do logger <- createLogger
                         
                         --sendPacket logger ctrlMgr (Chat (show 0) (show 1) input)
                         sendString logger ctrlMgr input
-                       
+  -}                     
                         -- is there something to be read?
                         size <- dataReady ctrlMgr
                         if size > 0 then
                           do response <- checkMessage logger ctrlMgr size
-                             putStrLn ("Haskell Received: "++(show size))
+                             --putStrLn ("Haskell Received: "++(show (length response)))
                              putStrLn ("Received from MGR: "++ (show response))
                              loop
                         else

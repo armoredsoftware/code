@@ -17,7 +17,7 @@ instance Show Packet where
 
 
 instance Binary Packet where
- put (CommRequest src dest)            = do put (0 ::Word8)
+ put (CommRequest src dest)            = do put (0 ::Word8) 
                                             put src
                                             put dest
  put (Chat src dest msg)               = do put (1 ::Word8)
@@ -41,3 +41,6 @@ instance Binary Packet where
                        dest <- get
                        att <- get
                        return (AttestationRequest src dest att)
+
+
+

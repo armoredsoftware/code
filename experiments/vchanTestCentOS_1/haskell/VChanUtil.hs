@@ -1,4 +1,4 @@
-{-# LANGUAGE ForeignFunctionInterface, EmptyDataDecls #-}
+{-# LANGUAGE ForeignFunctionInterface, EmptyDataDecls, ScopedTypeVariables #-}
 module VChanUtil 
 (getDomId
 ,printf
@@ -9,6 +9,7 @@ module VChanUtil
 ,createSrvCtrl 
 ,createClientCtrl 
 ,sendPacket
+,sendPacketString
 ,sendString
 ,ctrlWait
 ,dataReady
@@ -24,6 +25,7 @@ import Data.Binary
 import qualified Data.ByteString.Lazy as LazyBS
 import qualified Data.ByteString as BS
 import Packet
+import Codec.Compression.GZip
 
 data XenToolLogger
 data LibXenVChan
@@ -105,10 +107,14 @@ createClientCtrlP logger srvId clientId p = do path <- newCString p
 
 --decode (L.pack (read $ show $ L.unpack (encode x) ::[Word8])) :: Packet
 
+
+
+sendPacketString logger ctrl packet = do  msg <- newCString (show packet)
+                                          c_sendClientMessage logger ctrl msg (fromIntegral (length (show packet)) :: CInt)
 --sendPacket:: (Ptr XenToolLogger) -> (Ptr LibXenVChan)-> Packet-> IO(int)
-sendPacket logger ctrl packet = let msg = LazyBS.toStrict (encode packet)
+sendPacket logger ctrl packet = let msg = LazyBS.toStrict (compress (encode packet))
                                     size = fromIntegral (BS.length  msg) :: CInt
-                                 in BS.useAsCStringLen msg (\(message,_) -> c_sendClientMessage logger ctrl message size)
+                                 in BS.useAsCStringLen msg (\(message,sz) -> c_sendClientMessage logger ctrl message (fromIntegral sz::CInt))
 
 sendString logger ctrl str = do  msg <- newCString str
                                  c_sendClientMessage logger ctrl msg (fromIntegral (length str) ::CInt)
@@ -125,10 +131,22 @@ checkResponse logger vchan = alloca $ \ ptr -> do  (c_checkClientResponse logger
                                                    return (fromIntegral response)
 
 --checkMessage :: Ptr XenToolLogger -> Ptr LibXenVChan -> IO(Packet)
-checkMessage logger vchan dataSize= alloca $ \ ptr ->
-                              alloca $ \size -> do poke size (fromIntegral dataSize:: CInt)
+checkMessage logger vchan dataSize= allocaArray0 dataSize $ \( ptr::CString) ->
+                              alloca $ \(size :: Ptr CInt) -> do 
+                                                   poke size (fromIntegral dataSize:: CInt)
                                                    (c_readClientMessage logger vchan ptr size)
                                                    sz<- peek size
-                                                   response <- BS.packCStringLen (ptr,(fromIntegral sz::Int)-1)
-                                                   return (response)
+                                                   print (fromIntegral sz::Int)
+                                                   response <- (BS.packCStringLen  (ptr, fromIntegral sz:: Int)) 
+                                                   return(decode ((decompress (LazyBS.fromStrict response))) :: Packet)
+
+backslashes [] accum = accum
+backslashes (x:xs) [] = case x of 
+                          '\\' -> backslashes xs ("////")
+                          otherwise -> backslashes xs [x]
+backslashes (x:xs) accum = case x of 
+                             '\\' -> backslashes xs (accum++"////")
+                             otherwise ->  backslashes xs (accum ++[x])
+
+
 

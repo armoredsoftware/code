@@ -260,23 +260,20 @@ int sendClientMessage(xentoollog_logger * xc_logger, struct libxenvchan * txCtrl
                        char * msg, int size ) {
   int result = 0;
   int writeSize;
-  char buf[size+1];
   //char fmt[256];
   int i = 0;
 
   // Create the format for writing the message. 
   // This really should be done once during initialization
-  //sprintf(fmt, "%% %dd", EXP1_MSG_LEN);
 
-  // sprintf(buf, fmt, clientCount);
-  fprintf(stdout,"HEXDUMP\n");
+  /*fprintf(stdout,"HEXDUMP\n");
   for (i = 0; i < size; i++){
    fprintf(stdout,"%02x ",msg[i]);
   }
    fprintf(stdout,"\n");
-  strncpy(buf,msg,size);
+*/
 
-  writeSize = libxenvchan_write(txCtrl, buf, size+1);
+  writeSize = libxenvchan_send(txCtrl, msg, size);
   if (writeSize < 0) {
     perror("vchan to serverExp1 write");
     exit(1);
@@ -284,13 +281,13 @@ int sendClientMessage(xentoollog_logger * xc_logger, struct libxenvchan * txCtrl
   if (writeSize == 0) {
     perror("write serverExp1 size=0?");
     exit(1);
-  }/*
-  if (writeSize != size+1) {
+  }
+  if (writeSize != size) {
     fprintf(stdout,"wrote %d totalsize %d\n",writeSize,size);
   //  perror("write writeExp1 failed to write whole buffer.");
    // exit(1);
   }
-*/
+
 
   return result;
 }
@@ -303,23 +300,26 @@ int readClientMessage(xentoollog_logger * xc_logger, struct libxenvchan * ctrl,
   int result = 0;
   int size;
   //char * invalidChar;
-  int i = 0;
-
+  //char * buf = (char *) malloc (sizeof(char) * (*sz));
+  //int i = 0;
+/*
   fprintf(stdout,"size:%d\n", *sz);
-  
-  size = libxenvchan_read(ctrl, msg, *sz);
+*/  
+  size = libxenvchan_recv(ctrl, msg, *sz);
+/*
   fprintf(stdout,"Receive strlen: %d\n",size);
+  fprintf(stdout,"%s",msg);
   fprintf(stdout,"HEXDUMP\n");
   for (i = 0; i < size; i++){
    fprintf(stdout,"%02x ",msg[i]);
   }
    fprintf(stdout,"\n");
-
+*/
   *sz = size;
   // Was there a system error?
   if (size < 0) {
     // There was a significant error. Abort.
-    fprintf(stderr, "libxenvchan_read return=%d.\n", size);
+    fprintf(stderr, "libxenvchan_recv return=%d.\n", size);
     perror("serverExp1: read failed for clientExp1.");
     exit(1);
   }

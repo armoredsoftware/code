@@ -7,7 +7,7 @@ include $(EXP_ROOT)/Rules.mk
 
 ##########################################################
 
-APP_OBJS = main.o
+APP_OBJS = common.o
 
 CFLAGS += -I../include -I.
 
