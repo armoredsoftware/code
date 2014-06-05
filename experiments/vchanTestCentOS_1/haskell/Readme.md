@@ -28,7 +28,7 @@ In order to run the applications in the repo:
 * cd haskell
 * ghc Client.hs ../common/common.c -L/usr/lib64 -lxenvchan -lxenctrl
 * ghc Mgr.hs ../common/common.c -L/usr/lib64 -lxenvchan -lxenctrl 
-* scp Client root@<VM ip address>:
+* scp Client root@[VM ip address]:
 
 Login to the VM and run client
 * ./Client
