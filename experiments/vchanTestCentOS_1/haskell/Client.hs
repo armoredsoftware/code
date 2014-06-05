@@ -6,6 +6,27 @@ import Control.Concurrent
 import Data.Binary
 import qualified Data.ByteString.Lazy as BS
 
+createPacket packetType = case packetType of
+                            "0" -> do putStrLn "[SrcId] [DestId]"
+                                      input <- getLine
+                                      let src = takeWhile ((/=) ' ') input
+                                          dest = tail $ dropWhile ((/=) ' ') input
+                                        in return (CommRequest src dest)
+                            "1" -> do putStrLn "[SrcId] [DestId] [msg]"
+                                      input <- getLine
+                                      let src = takeWhile((/=) ' ') input
+                                          dest = takeWhile ((/=) ' ') $ tail $ dropWhile ((/=) ' ') input
+                                          msg = tail $dropWhile ((/=) ' ') $ tail $ dropWhile ((/=) ' ') input
+                                       in return (Chat src dest msg)
+                            "2" -> do putStrLn "[SrcId] [DestId] [attestation Req]"
+                                      input <- getLine
+                                      let src = takeWhile((/=) ' ') input
+                                          dest = takeWhile ((/=) ' ') $ tail $ dropWhile ((/=) ' ') input
+                                          msg = tail $dropWhile ((/=) ' ') $ tail $ dropWhile ((/=) ' ') input
+                                       in return (AttestationRequest src dest msg)
+
+
+
 main = do logger <- createLogger
           id <- getDomId
           putStrLn ("Got my Id: "++show id)         

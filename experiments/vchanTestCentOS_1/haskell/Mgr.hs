@@ -15,13 +15,13 @@ createPacket packetType = case packetType of
                             "1" -> do putStrLn "[SrcId] [DestId] [msg]"
                                       input <- getLine
                                       let src = takeWhile((/=) ' ') input
-                                          dest = tail $ dropWhile ((/=) ' ') input
+                                          dest = takeWhile ((/=) ' ') $tail $ dropWhile ((/=) ' ') input
                                           msg = tail $dropWhile ((/=) ' ') $ tail $ dropWhile ((/=) ' ') input
                                        in return (Chat src dest msg)
                             "2" -> do putStrLn "[SrcId] [DestId] [attestation Req]"
                                       input <- getLine
                                       let src = takeWhile((/=) ' ') input
-                                          dest = tail $ dropWhile ((/=) ' ') input
+                                          dest = takeWhile ((/=) ' ') $tail $ dropWhile ((/=) ' ') input
                                           msg = tail $dropWhile ((/=) ' ') $ tail $ dropWhile ((/=) ' ') input
                                        in return (AttestationRequest src dest msg)
 
