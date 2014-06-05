@@ -15,10 +15,9 @@ import Crypto.Random
 
 
 main = do e <- createEntropyPool
-          n <- generateNonce
+          req <- (generateRequest . generateDesired) [0..7]
           let g = (cprgCreate e) :: SystemRNG
               ((pub, pri), g') = generate g 255 3
-              req = (generateDesired [0..7], n) :: Request
               result = doAppraisal req appraiserExpectedPCRcontents (pub,pri)
           print result
           return ()
@@ -71,7 +70,7 @@ type SignedQuote = (Quote, Signature)
 
 doAppraisal :: Request -> PCRcontents -> (PublicKey, PrivateKey) -> Bool
 doAppraisal request@(_, requestNonce) appraiserExpected (pubKey, priKey) = let  (quote@(pcrCon, quoteNonce), signature) = getSignedQuote request priKey
-                                                                                a = verify md5 pubKey (packQuote quote) {-(alteredPCRcontent, quoteNonce))-} signature --TODO key handling
+                                                                                a = verify md5 pubKey (packQuote quote {-(alteredPCRcontent, quoteNonce)-}) signature --TODO key handling
                                                                                 b = requestNonce == quoteNonce
                                                                                 c = pcrCon == appraiserExpected
                                                                              in and [a,b,c]
