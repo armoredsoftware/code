@@ -1,17 +1,19 @@
 module Demo2V1 where
 
+import Data.Binary as Bin
 import System.Random
 
-{--
-generateNonce :: Int 
-generateNonce = 
+main :: IO ()
+main = do
+  nonce <- rollHugeDice
+  print nonce
 
-genereateNonceHelper :: IO Int
-generateNonceHelper = getStdRandom((-9000), (9000))
---}
-rollDice :: IO Int
-rollDice = getStdRandom (randomR ((minBound ::Int),maxBound :: Int))
 
+
+
+rollHugeDice ::IO Int
+rollHugeDice = getStdRandom (randomR ((minBound ::Int),maxBound :: Int))
+      
 dosomethin :: Int -> Int
 dosomethin x = 2*x
 
