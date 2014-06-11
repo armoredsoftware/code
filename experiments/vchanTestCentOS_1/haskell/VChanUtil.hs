@@ -11,9 +11,16 @@ module VChanUtil
 ,sendPacket
 ,sendPacketString
 ,sendString
+,sendBlob
+,getBlob
 ,ctrlWait
 ,dataReady
 ,checkMessage
+,sendChunkedMessage
+,readChunkedMessage
+,getBufferSpace
+,XenToolLogger
+,LibXenVChan
 ) where
 
 import Foreign
@@ -59,6 +66,14 @@ foreign import ccall unsafe "../include/exp1Common.h sendClientMessage"
 foreign import ccall unsafe "../include/exp1Common.h libxenvchan_data_ready"
     c_dataReady:: (Ptr LibXenVChan)-> IO (CInt)
 
+foreign import ccall unsafe "../include/exp1Common.h libxenvchan_buffer_space"
+    c_bufferSpace:: (Ptr LibXenVChan)-> IO (CInt)
+
+foreign import ccall unsafe "../include/exp1Common.h readChunkedMessage"
+    c_readChunkedMessage :: Ptr XenToolLogger -> Ptr LibXenVChan -> CString
+
+foreign import ccall unsafe "../include/exp1Common.h sendChunkedMessage"
+    c_sendChunkedMessage :: Ptr XenToolLogger -> Ptr LibXenVChan -> CString->CInt->IO(CInt)
 
 getDomId :: IO Int
 getDomId = do x <- c_getDomId
@@ -137,6 +152,8 @@ sendPacket logger ctrl packet = let msg = LazyBS.toStrict (compress (encode pack
                                                            ctrl
                                                            message
                                                            (fromIntegral sz))
+
+
 --Send a string via the input vchan
 sendString :: Ptr XenToolLogger -> Ptr LibXenVChan -> String -> IO Int
 sendString logger ctrl str = do  msg <- newCString str
@@ -146,6 +163,32 @@ sendString logger ctrl str = do  msg <- newCString str
                                      ctrl
                                      msg
                                      (fromIntegral $ length str)
+sendBlob logger ctrl blob = let size = fromIntegral (BS.length  blob):: CInt
+
+                                 in BS.useAsCStringLen blob (\(message,sz) -> do
+                                       liftM fromIntegral $ c_sendClientMessage
+                                                             logger
+                                                             ctrl
+                                                             message
+                                                             (fromIntegral sz))
+
+
+getBlob :: Ptr XenToolLogger -> Ptr LibXenVChan -> Int->IO BS.ByteString
+getBlob logger ctrl dataSize= do  allocaArray0 dataSize $ \( ptr::CString) ->
+                                      alloca $ \(size :: Ptr CInt) -> do
+                                              poke size (fromIntegral dataSize:: CInt)
+                                              c_readClientMessage
+                                                logger
+                                                ctrl
+                                                ptr
+                                                size
+                                              sz<- peek size
+                                              response <- BS.packCStringLen
+                                                  (ptr, fromIntegral sz:: Int)
+                                              return $ response
+
+getBufferSpace :: Ptr LibXenVChan-> IO(Int64)
+getBufferSpace vchan =  liftM fromIntegral $ (c_bufferSpace vchan)
 
 --Wait until an event happens on the input VChan
 ctrlWait :: Ptr LibXenVChan -> IO Int
@@ -171,3 +214,16 @@ checkMessage logger vchan dataSize= allocaArray0 dataSize $ \( ptr::CString) ->
                                               return $ decode $
                                                    decompress $
                                                    LazyBS.fromStrict response
+
+
+sendChunkedMessage :: Ptr XenToolLogger->Ptr LibXenVChan->String-> IO(Int)
+sendChunkedMessage logger vchan msg =  do str<- newCString msg
+                                          let size = length msg
+                                           in liftM fromIntegral $ c_sendChunkedMessage
+                                                logger
+                                                vchan
+                                                str
+                                                (fromIntegral size :: CInt)
+                                           
+readChunkedMessage :: Ptr XenToolLogger-> Ptr LibXenVChan -> IO String
+readChunkedMessage logger vchan = peekCString  $ c_readChunkedMessage logger vchan

@@ -41,6 +41,8 @@ int sendClientMessage(xentoollog_logger * xc_logger, struct libxenvchan * txCtrl
 
 int checkClientResponse(xentoollog_logger * xc_logger, struct libxenvchan * ctrl, int * count);
 int readClientMessage(xentoollog_logger * xc_logger, struct libxenvchan * ctrl, char * msg, int * size);
+char * readChunkedMessage(xentoollog_logger *xc_logger, struct libxenvchan *ctrl);
+int sendChunkedMessage(xentoollog_logger * xc_logger, struct libxenvchan * txCtrl, char * msg, int size ); 
 
 int getDomId(void);
 xentoollog_logger_stdiostream * createDebugLogger(void);
