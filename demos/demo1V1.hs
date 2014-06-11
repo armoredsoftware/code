@@ -42,6 +42,8 @@ md5 :: HashDescr
 md5 = hashDescrMD5
 
 
+--changed on concurrent branch
+
 {- ECA -- Alternate version -}
 
 -- This is to handle custom errors, in addition to crypto errors.
