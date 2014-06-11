@@ -4,8 +4,6 @@ import qualified Data.Word as W
 import Data.Bits
 import qualified Data.ByteString as B
 import Data.ByteString (append, pack)
-
-
 import Data.Binary
 import Data.Maybe
 
@@ -16,7 +14,10 @@ import Crypto.PubKey.HashDescr
 import Crypto.Random
 
 import Control.Monad
+import Control.Concurrent
+import Control.Concurrent.STM
 
+import System.IO.Unsafe (unsafePerformIO)
       
 
 
@@ -42,7 +43,11 @@ md5 :: HashDescr
 md5 = hashDescrMD5
 
 
---changed on concurrent branch
+data Shared = Appraisal Request
+              | Attestation SignedQuote
+              | Empty
+
+
 
 {- ECA -- Alternate version -}
 
@@ -52,14 +57,29 @@ liftErr :: Either Error a -> Either MyError a
 liftErr (Left err) = Left $ CryptoError err
 liftErr (Right res) = Right res
 
+
+gen :: SystemRNG
+gen = unsafePerformIO $ liftM cprgCreate createEntropyPool
+
 main2 :: IO ()
 main2 = 
     -- The only thing we need the IO monad for is entropy and printing (for now)
-    do g <- liftM cprgCreate createEntropyPool
-       print $ case doAppraisal2 g of
-                 Right True -> "Appraisal succeeded."
-                 Right False -> "Appraisal failed."
-                 Left err -> "Error: " ++ show err
+    do m <- newTVarIO Empty -- $ Appraisal (bit 0, B.empty)
+       forkIO $ spawnAppraisal m pub gen'
+       forkIO $ spawnAttestation m pri
+       return ()
+
+
+  where {- We setup the keys, pcrs, and next generator here, under the 
+           assumption that they're globally known knowledge. We can parameterize
+           later as needed. -}
+        pub :: PublicKey
+        pri :: PrivateKey
+        gen' :: SystemRNG
+        ((pub, pri), gen') = generate gen 255 3
+
+
+
 
 {- Think of an appraisal as the three step process we've talked about:
    1)  Send a request.
@@ -69,6 +89,83 @@ main2 =
    For a shallow embedding, each step should be it's own function, for clarity.
    Note that we use the Either monad to propogate errors.
 -}
+
+
+spawnAppraisal :: TVar Shared -> PublicKey -> SystemRNG -> IO ()
+spawnAppraisal m pub gen =
+  let req = mkRequest [0..7] gen
+      in do atomically(putRequest req m)
+            val <- atomically $
+                   do sq <- getSignedQuote m
+                      let result = evaluate req sq pcrs pub
+                      case result of Left err -> return $ Left err --TODO throw?
+                                     Right bool -> return $ Right bool
+                      --return ()
+            print $ case val of Right True -> "Appraisal succeeded."
+                                Right False -> "Appraisal failed."
+                                Left err -> "Error: " ++ show err
+
+ where 
+        pcrs :: PCRlist
+        pcrs = correct --wrong
+
+        correct :: PCRlist
+        correct = map bit [0..7]
+
+        wrong :: PCRlist
+        --wrong = [(bit 3)] ++ (map bit [1..7])
+        wrong = (map bit [0..6]) ++ [(bit 7)]
+
+
+
+putRequest :: Request -> TVar Shared -> STM ()
+putRequest req m = writeTVar m $ Appraisal req
+
+
+getSignedQuote :: TVar Shared -> STM SignedQuote
+getSignedQuote m  = do v <- readTVar m
+                       case v of  Attestation sq -> return sq
+                                  otherwise -> retry
+
+
+
+
+
+
+
+spawnAttestation :: TVar Shared -> PrivateKey -> IO ()
+spawnAttestation m pri = atomically $
+  do req <- getRequest m
+     let result = mkSignedQuote req pcrs pri
+     case result of Left err -> return () --TODO throw??
+                    Right sq -> putSignedQuote sq m
+
+ where 
+        pcrs :: PCRlist
+        pcrs = correct --wrong
+
+        wrong :: PCRlist
+        --wrong = [(bit 3)] ++ (map bit [1..7])
+        wrong = (map bit [0..6]) ++ [(bit 3)]
+
+        correct :: PCRlist
+        correct = map bit [0..7]
+
+
+
+getRequest :: TVar Shared -> STM Request
+getRequest m = do v <- readTVar m
+                  case v of Appraisal req -> return req
+                            otherwise -> retry
+
+
+
+putSignedQuote :: SignedQuote -> TVar Shared -> STM ()
+putSignedQuote sq m = writeTVar m $ Attestation sq
+
+
+
+
 doAppraisal2 :: SystemRNG -> Either MyError Bool
 doAppraisal2 gen =
     let req = mkRequest [0..7] gen' in
@@ -84,6 +181,8 @@ doAppraisal2 gen =
 
         pcrs :: PCRlist
         pcrs = map bit [0..7]
+
+
 
 -- new version of pack for my modified quote
 pack' :: (PCRlist, Nonce) -> B.ByteString
@@ -133,8 +232,6 @@ evaluate (mask, rnonce) (quote@(qpcrs, qnonce), signature) pcrs pub =
                 then Left $ AppraisalError "PCR not of expected value."
                 else return True
         
-
-
 
 
 
