@@ -127,8 +127,9 @@ struct libxenvchan * createReceiveChanP (xentoollog_logger * xc_logger, int id, 
 }
 //####################################################################
 
-struct libxenvchan * createTransmitChan(xentoollog_logger * xc_logger, int destId, int sourceId){
-  return createTransmitChanP(xc_logger,destId,sourceId,NULL);
+struct libxenvchan * createTransmitChan(xentoollog_logger * xc_logger, int destId){
+  int sourceId = getDomId();
+  return createTransmitChanP(xc_logger,destId, sourceId,NULL);
 }
 
 //####################################################################
@@ -302,9 +303,9 @@ struct libxenvchan * txCtrl, char * msg, int size ) {
   int writeSize = 0;
   int result = 0;
   int i = 0;
-  int j = 0;
+ // int j = 0;
   int idx = 0;
-
+  int n = 1;
   sprintf(buf+1,"%4d",size);
 
   if (size > availSize){
@@ -314,28 +315,32 @@ struct libxenvchan * txCtrl, char * msg, int size ) {
   }else{
     buf[0] = (char) 254; // not chunked
     memcpy(buf+headerSize,msg,size);
-    printf("HexDump\n");
+/*    printf("HexDump\n");
     for (i = 0; i < size+headerSize;i++){
         printf("%2x ",buf[i]);
     } 
     printf("\n");
+*/
   }
 
-  printf("Msg: %s Size: %d\n",msg, size);
+/*  printf("Msg: %s Size: %d\n",msg, size);
 
 
   printf("%s\n",buf);
- 
+ */
   //chunk
   if (size > availSize){
-    printf("HexDump\n");
+ /*   printf("HexDump\n");
     for (i = 0; i < maxSize;i++){
         printf("%2x ",buf[i]);
     } 
     printf("\n");
+*/
     // chunked totalsize payloadSize payload
-    writeSize = libxenvchan_send(txCtrl,buf,maxSize); 
+    while(libxenvchan_buffer_space(txCtrl) <maxSize);
+    writeSize = libxenvchan_write(txCtrl,buf,maxSize); 
     free(buf);
+    n++;
     idx+=availSize-headerSize+1;
 
     chunk = (char*)malloc(sizeof(char) * maxSize);
@@ -346,34 +351,41 @@ struct libxenvchan * txCtrl, char * msg, int size ) {
       
       memcpy(chunk+headerSize, msg+(idx), availSize);
       idx+=availSize;
-      printf("Chunk\n");
+/*      printf("Chunk\n");
       for (j = 0; j < maxSize;j++){
           printf("%2x ",chunk[j]);
       } 
       printf("\n");
-      
+*/      
       //wait until there is enough space
       while(libxenvchan_buffer_space(txCtrl) < maxSize){
-         printf("Waiting for space to write\n");
+//         printf("Waiting for space to write\n");
       }
       //send chunk
-      writeSize += libxenvchan_send(txCtrl,chunk, maxSize);
+      writeSize += libxenvchan_write(txCtrl,chunk, maxSize);
+      n++;
     }
     //send leftover chunk
 
-    printf("Sending Leftover chunk\n");
+//    printf("Sending Leftover chunk\n");
     sprintf(chunk+1,"%4d", size-idx);
     memcpy(chunk+headerSize, msg+(idx),size -idx); 
-    for (j = 0; j < size -idx + headerSize; j++){
+/*    for (j = 0; j < size -idx + headerSize; j++){
       printf("%2x ",chunk[j]);
     }
      printf("\n");
-    
-    writeSize+= libxenvchan_send(txCtrl,chunk,size-idx+headerSize );
+  */
+    while(libxenvchan_buffer_space(txCtrl) < maxSize){
+//         printf("Waiting for space to write\n");
+      } 
+    writeSize+= libxenvchan_write(txCtrl,chunk,size-idx+headerSize );
     free(chunk);
   //no chunk
   }else{
-    writeSize = libxenvchan_send(txCtrl, buf, size+headerSize);
+    while(libxenvchan_buffer_space(txCtrl) < maxSize){
+//         printf("Waiting for space to write\n");
+      } 
+    writeSize = libxenvchan_write(txCtrl, buf, size+headerSize);
     free(buf);
   }
   if (writeSize < 0) {
@@ -384,8 +396,8 @@ struct libxenvchan * txCtrl, char * msg, int size ) {
     perror("write serverExp1 size=0?");
     exit(1);
   }
-  if (writeSize != size+5) {
-    fprintf(stdout,"wrote %d totalsize %d\n",writeSize,size);
+  if (writeSize != size+(n*headerSize)+4) {
+    fprintf(stdout,"wrote %d totalsize %d\n",writeSize,size+(n*headerSize)+4);
   //  perror("write writeExp1 failed to write whole buffer.");
   //  exit(1);
   }
@@ -422,112 +434,121 @@ int getSize(char *header){
 
 //####################################################################
 
-char * readChunkedMessage(xentoollog_logger *xc_logger, struct libxenvchan *ctrl){
+char * readChunkedMessage(xentoollog_logger *xc_logger, struct libxenvchan *ctrl, int *sz){
    int headerSize = 5;
    char * header = (char *) malloc ( headerSize * sizeof(char));
    char * mesg;
    int size;
-   int i = 0;
+   //int i = 0;
    char * chunk;
    int chunkSize = 0;
    char * p;
    int messageSize = 0;
-   int count; 
    //get Header
+   while(!libxenvchan_data_ready(ctrl)){}
    size = libxenvchan_read(ctrl,header, headerSize);  
    if ( size != headerSize){
     fprintf(stderr, "libxenvchan_read return=%d. should be %d\n", size, headerSize);
-    perror("readChunkedMessage: read failed for clientExp1.");
+    perror("readChunkedMessage: read failed 1.");
     exit(1);
    }
     
     messageSize = getSize(header+1);
-    printf("messageSize: %d\n",messageSize);
-
+  //  printf("messageSize: %d\n",messageSize);
+    *sz = messageSize;
+/*
     printf("HexDump\n");
     for (i = 0; i < 5;i++){
         printf("%2x ",header[i]);
     }
     printf("\n");
+*/
    //allocate space for entire message 
    mesg = (char *)malloc(sizeof(char) * messageSize);   
    p = mesg;
    
    if (isChunked(header) ){
        
-     printf("Chunked Data\n");
+ /*    printf("Chunked Data\n");
      printf("DataReady: %d\n",libxenvchan_data_ready(ctrl));
-     
+*/     
+   while(!libxenvchan_data_ready(ctrl)){}
      //get second size
-     size = libxenvchan_recv(ctrl,header, headerSize-1);
-     printf("finished read\n");
+     size = libxenvchan_read(ctrl,header, headerSize-1);
+//     printf("finished read\n");
 
      if ( size != headerSize-1){
        fprintf(stderr, "libxenvchan_read return=%d. should be %d\n", size, headerSize-1);
-    //   perror("readChunkedMessage: read failed for clientExp1.");
+       perror("readChunkedMessage: read failed 2.");
     //   exit(1);
      }
      
-     printf("getting size\n");
+ //    printf("getting size\n");
      chunkSize = getSize(header);
-     printf("done with size: %d\n",chunkSize);
+//     printf("done with size: %d\n",chunkSize);
      
      //allocate chunk
      chunk = (char *)malloc(sizeof(char) *chunkSize); 
      
      //read chunk
+     while(!libxenvchan_data_ready(ctrl)){}
      size = libxenvchan_read(ctrl,chunk, chunkSize);
-      printf("Reading Chunk\n");
+ //     printf("Reading Chunk\n");
      
      if ( size != chunkSize){
        fprintf(stderr, "libxenvchan_read return=%d. should be %d\n", size, chunkSize);
-       perror("readChunkedMessage: read failed for clientExp1.");
+       perror("readChunkedMessage: read failed 3.");
        exit(1);
      }
      memcpy(p,chunk,chunkSize);
      p= p+chunkSize;
-  printf("HexDump\n");
+/*  printf("HexDump\n");
   for (i = 0; i < messageSize;i++){
       printf("%2x ",mesg[i]);
   } 
   printf("\n");
+*/
      while(p - mesg < messageSize){
-        printf("DataReady: %d\n",libxenvchan_data_ready(ctrl));
-        if (libxenvchan_data_ready(ctrl)){
+//        printf("DataReady: %d\n",libxenvchan_data_ready(ctrl));
+        if (libxenvchan_data_ready(ctrl)>headerSize){
           size = libxenvchan_read(ctrl,header, headerSize);  
 
 
           if ( size != headerSize){
             fprintf(stderr, "libxenvchan_read return=%d. should be %d\n", size, headerSize);
-            perror("readChunkedMessage: read failed for clientExp1.");
+            perror("readChunkedMessage: read failed 4.");
             exit(1);
           }
           free(chunk);
+  //        printf("getting size2\n");
           chunkSize = getSize(header+1);
+ //         printf("done with size2: %d\n",chunkSize);
           chunk = (char *)malloc(sizeof(char) *chunkSize); 
+          while (libxenvchan_data_ready(ctrl)<chunkSize){};
           size = libxenvchan_read(ctrl,chunk, chunkSize);
           if ( size != chunkSize){
             fprintf(stderr, "libxenvchan_read return=%d. should be %d\n", size, chunkSize);
-            perror("readChunkedMessage: read failed for clientExp1.");
+            perror("readChunkedMessage: read failed 5.");
             exit(1);
           }
           memcpy(p,chunk,chunkSize);
           p= p+chunkSize;
-          printf("Math: %d\n",p-mesg);
+/*          printf("Math: %d\n",p-mesg);
           printf("HexDump\n");
           for (i = 0; i < messageSize;i++){
             printf("%2x ",mesg[i]);
           }
+*/
         }
      }
      free(chunk);
      free(header);
    }else{
-     printf("Not Chunked\n");
+//     printf("Not Chunked\n");
      size = libxenvchan_read(ctrl,mesg,messageSize);
    }
 
-   printf("Size Data: %d\n",messageSize);
+/*   printf("Size Data: %d\n",messageSize);
 
    for (i = 0; i < messageSize; i++){
       printf("%c",mesg[i]);
@@ -538,8 +559,8 @@ char * readChunkedMessage(xentoollog_logger *xc_logger, struct libxenvchan *ctrl
       printf("%2x ",mesg[i]);
   } 
   printf("\n");
- 
-   return mesg;
+  */ 
+  return mesg;
 }
 
 //####################################################################

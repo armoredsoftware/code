@@ -1,6 +1,10 @@
 {-# LANGUAGE ForeignFunctionInterface, EmptyDataDecls, ScopedTypeVariables #-}
 module VChanUtil 
 (getDomId
+,client_init
+,server_init
+,receive
+,send
 ,printf
 ,createLogger
 ,destroyLogger
@@ -16,8 +20,10 @@ module VChanUtil
 ,ctrlWait
 ,dataReady
 ,checkMessage
-,sendChunkedMessage
-,readChunkedMessage
+,sendChunkedMessageString
+,readChunkedMessageString
+,sendChunkedMessageByteString
+,readChunkedMessageByteString
 ,getBufferSpace
 ,XenToolLogger
 ,LibXenVChan
@@ -52,7 +58,7 @@ foreign import ccall unsafe "../include/exp1Common.h createReceiveChanP"
     c_createReceiveChanP:: Ptr XenToolLogger -> CInt-> CString -> IO (Ptr LibXenVChan) 
 
 foreign import ccall unsafe "../include/exp1Common.h createTransmitChanP"
-    c_createTransmitChanP:: Ptr XenToolLogger -> CInt-> CInt ->CString -> IO (Ptr LibXenVChan) 
+    c_createTransmitChanP:: Ptr XenToolLogger -> CInt-> CInt-> CString -> IO (Ptr LibXenVChan) 
 
 foreign import ccall unsafe "../include/exp1Common.h libxenvchan_wait"
     c_libxenvchan_wait:: (Ptr LibXenVChan)-> IO(CInt)
@@ -70,7 +76,7 @@ foreign import ccall unsafe "../include/exp1Common.h libxenvchan_buffer_space"
     c_bufferSpace:: (Ptr LibXenVChan)-> IO (CInt)
 
 foreign import ccall unsafe "../include/exp1Common.h readChunkedMessage"
-    c_readChunkedMessage :: Ptr XenToolLogger -> Ptr LibXenVChan -> CString
+    c_readChunkedMessage :: Ptr XenToolLogger -> Ptr LibXenVChan -> Ptr CInt->IO CString
 
 foreign import ccall unsafe "../include/exp1Common.h sendChunkedMessage"
     c_sendChunkedMessage :: Ptr XenToolLogger -> Ptr LibXenVChan -> CString->CInt->IO(CInt)
@@ -105,44 +111,49 @@ createMgrChan_Client logger srvId = do createClientCtrlP logger srvId 0 "data/mg
 --Create a VChan as a server for that clientId will later connect to 
 --Wrapper
 createSrvCtrl :: Ptr XenToolLogger -> Int-> IO (Ptr LibXenVChan)
-createSrvCtrl logger clientId = let path = "data/serverVchan_" ++
-                                           (show clientId)
+createSrvCtrl logger clientId = let path = "data/serverVchan"
                                  in  createSrvCtrlP logger clientId path
 
 --Underlying function used to create a Vchan as a Server
 createSrvCtrlP :: Ptr XenToolLogger -> Int-> String -> IO (Ptr LibXenVChan)
 createSrvCtrlP logger clientId p = do path <- newCString p 
-                                      c_createReceiveChanP logger 
-                                       (fromIntegral clientId:: CInt)
-                                       path
+                                      ctrl  <-c_createReceiveChanP logger 
+                                              (fromIntegral clientId:: CInt)
+                                              path
+                                      free path
+                                      return ctrl
 
 --Client dom connects to an existing VChan in which the client has permission 
-createClientCtrl :: Ptr XenToolLogger -> Int -> Int -> IO (Ptr LibXenVChan)
-createClientCtrl logger srvId clientId = let path = "data/serverVchan_"++
-                                                    (show clientId)
-                                          in createClientCtrlP logger srvId clientId path
+createClientCtrl :: Ptr XenToolLogger -> Int -> IO (Ptr LibXenVChan)
+createClientCtrl logger srvId = do clientId <- getDomId
+                                   let path = "data/serverVchan"
+                                   createClientCtrlP logger srvId clientId path
 
 --Underlying function used to connect to a VChan as a Client
 createClientCtrlP :: Ptr XenToolLogger->Int->Int->String->IO (Ptr LibXenVChan)
 createClientCtrlP logger srvId clientId p = do path <- newCString p 
                                                putStrLn p
-                                               c_createTransmitChanP logger 
-                                                (fromIntegral srvId :: CInt) 
-                                                (fromIntegral clientId :: CInt)
-                                                path
+                                               chan <- c_createTransmitChanP logger 
+                                                        (fromIntegral srvId :: CInt) 
+                                                        (fromIntegral clientId :: CInt) 
+                                                        path
+                                               free path
+                                               return chan
 
 --Used for Debugging, sending the string version of the Packet
 sendPacketString:: Ptr XenToolLogger->Ptr LibXenVChan->Packet-> IO Int 
 sendPacketString logger ctrl packet = do  let packetStr = show packet
                                           msg <- newCString packetStr
-                                          liftM fromIntegral $ 
-                                            c_sendClientMessage logger
-                                              ctrl
-                                              msg
-                                              (fromIntegral $ length packetStr)
+                                          res <- liftM fromIntegral $ 
+                                                  c_sendClientMessage logger
+                                                   ctrl
+                                                   msg
+                                                   (fromIntegral $ length packetStr)
+                                          free msg
+                                          return res
 
 --encode compress and sends the input packet to the input VChan
-sendPacket:: Ptr XenToolLogger->Ptr LibXenVChan-> Packet-> IO Int
+sendPacket:: (Binary e)=>Ptr XenToolLogger->Ptr LibXenVChan-> e-> IO Int
 sendPacket logger ctrl packet = let msg = LazyBS.toStrict (compress (encode packet))
                                     size = fromIntegral (BS.length  msg):: CInt
 
@@ -157,12 +168,14 @@ sendPacket logger ctrl packet = let msg = LazyBS.toStrict (compress (encode pack
 --Send a string via the input vchan
 sendString :: Ptr XenToolLogger -> Ptr LibXenVChan -> String -> IO Int
 sendString logger ctrl str = do  msg <- newCString str
-                                 liftM fromIntegral $ 
-                                   c_sendClientMessage
-                                     logger
-                                     ctrl
-                                     msg
-                                     (fromIntegral $ length str)
+                                 res <- liftM fromIntegral $ 
+                                         c_sendClientMessage
+                                          logger
+                                          ctrl
+                                          msg
+                                          (fromIntegral $ length str)
+                                 free msg
+                                 return res
 sendBlob logger ctrl blob = let size = fromIntegral (BS.length  blob):: CInt
 
                                  in BS.useAsCStringLen blob (\(message,sz) -> do
@@ -199,7 +212,7 @@ dataReady :: Ptr LibXenVChan -> IO Int
 dataReady ctrl = liftM fromIntegral (c_dataReady ctrl)
 
 --Use with dataReady to get a certain amount of data from a VChan
-checkMessage :: Ptr XenToolLogger -> Ptr LibXenVChan -> Int->IO Packet
+checkMessage :: (Binary e)=>Ptr XenToolLogger -> Ptr LibXenVChan -> Int->IO e
 checkMessage logger vchan dataSize= allocaArray0 dataSize $ \( ptr::CString) ->
                               alloca $ \(size :: Ptr CInt) -> do 
                                               poke size (fromIntegral dataSize:: CInt)
@@ -211,19 +224,72 @@ checkMessage logger vchan dataSize= allocaArray0 dataSize $ \( ptr::CString) ->
                                               sz<- peek size
                                               response <- BS.packCStringLen
                                                   (ptr, fromIntegral sz:: Int) 
-                                              return $ decode $
-                                                   decompress $
+                                              return $ decode $ decompress $
                                                    LazyBS.fromStrict response
 
 
-sendChunkedMessage :: Ptr XenToolLogger->Ptr LibXenVChan->String-> IO(Int)
-sendChunkedMessage logger vchan msg =  do str<- newCString msg
-                                          let size = length msg
-                                           in liftM fromIntegral $ c_sendChunkedMessage
-                                                logger
-                                                vchan
-                                                str
-                                                (fromIntegral size :: CInt)
+sendChunkedMessageString :: Ptr XenToolLogger->Ptr LibXenVChan->String-> IO(Int)
+sendChunkedMessageString logger vchan msg =  do str<- newCString msg
+                                                let size = length msg
+                                                res <- liftM fromIntegral $ c_sendChunkedMessage
+                                                         logger
+                                                         vchan
+                                                         str
+                                                         (fromIntegral size :: CInt)
+                                                free str
+                                                return res
                                            
-readChunkedMessage :: Ptr XenToolLogger-> Ptr LibXenVChan -> IO String
-readChunkedMessage logger vchan = peekCString  $ c_readChunkedMessage logger vchan
+sendChunkedMessageByteString :: Ptr XenToolLogger->Ptr LibXenVChan->BS.ByteString-> IO(Int)
+sendChunkedMessageByteString logger vchan msg = BS.useAsCStringLen msg (\(message,sz) -> 
+                                                        liftM fromIntegral $ c_sendChunkedMessage
+                                                             logger
+                                                             vchan
+                                                             message
+                                                             (fromIntegral sz :: CInt))
+                                          
+
+readChunkedMessageString :: Ptr XenToolLogger-> Ptr LibXenVChan -> IO String
+readChunkedMessageString logger vchan = do alloca $ \(size:: Ptr CInt)-> do
+                                           ptr <-c_readChunkedMessage logger vchan size
+                                           sz <- peek size
+ 
+                                           str <-peekCStringLen (ptr,fromIntegral sz ::Int)
+                                           free ptr
+                                           return str
+ 
+readChunkedMessageByteString :: Ptr XenToolLogger-> Ptr LibXenVChan -> IO BS.ByteString
+readChunkedMessageByteString logger vchan = do alloca $ \(size :: Ptr CInt) -> do
+                                                  ptr <-c_readChunkedMessage logger vchan size
+                                                  sz <- peek size
+                                                  str <-BS.packCStringLen (ptr,fromIntegral sz ::Int)
+                                                  free ptr
+                                                  return str
+                                                         
+
+-- #################################################################################3
+client_init:: Int-> IO (Ptr LibXenVChan)
+client_init otherDom = do logger <- createLogger
+                          createClientCtrl logger otherDom
+                        
+
+server_init::Int-> IO (Ptr LibXenVChan)
+server_init otherDom = do logger <- createLogger
+                          createSrvCtrl logger otherDom
+
+send :: Binary e => Ptr LibXenVChan -> e -> IO(Int)
+send chan packet = do let msg = LazyBS.toStrict $ compress $ encode packet 
+                      logger <- createLogger
+                      BS.useAsCStringLen msg (\(message,sz)-> 
+                             liftM fromIntegral $ c_sendChunkedMessage
+                                 logger chan message (fromIntegral sz ::CInt))
+
+
+receive :: Binary e => Ptr LibXenVChan-> IO e
+receive chan = do logger <- createLogger
+                  alloca $ \(size :: Ptr CInt) -> do
+                   ptr <-c_readChunkedMessage logger chan size
+                   sz <- peek size
+                   str <- BS.packCStringLen (ptr, fromIntegral sz:: Int)
+                   free ptr
+                   return $ decode $ decompress $ LazyBS.fromStrict str
+
