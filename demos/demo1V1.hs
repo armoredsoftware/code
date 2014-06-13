@@ -17,6 +17,7 @@ import Data.Bits
 import Data.ByteString (ByteString, pack, append)
 import Data.Word
 import System.IO.Unsafe (unsafePerformIO)
+import Data.Binary
       
 -- Primitive types
 type PCR = Word8
@@ -30,12 +31,32 @@ data Shared = Appraisal Request
               | Attestation Quote
               | Result Bool
 
+
 instance Show Shared where
     show Appraisal{} = "Appraisal"
     show Attestation{} = "Attestation"
     show (Result True) = "Appraisal succeeded."
     show (Result False) = "Appraisal failed."
 
+
+instance Binary Shared where
+  put (Appraisal req)              = do put (0::Word8)
+                                        put req
+  put(Attestation quote)           = do put (1::Word8)
+                                        put quote
+  put(Result res)                  = do put(2::Word8)
+                                        put res
+
+  get = do t<- get :: Get Word8
+           case t of
+             0 -> do req <- get
+                     return (Appraisal req)
+             1 -> do quote <- get
+                     return (Attestation quote)
+             2 -> do res <- get
+                     return (Result res)
+
+  
 -- PCR primitives
 pcrs :: [PCR]
 pcrs = correct --wrong
