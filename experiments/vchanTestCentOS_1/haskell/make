@@ -6,6 +6,5 @@ if [ "$1" == "speed" ]; then
   ghc SpeedTest_Dom0.hs ../common/common.c -L/usr/lib64 -lxenvchan -lxenctrl
 else
   ghc Client.hs ../common/common.c -L/usr/lib64 -lxenvchan -lxenctrl
-  ghc Client2.hs ../common/common.c -L/usr/lib64 -lxenvchan -lxenctrl
   ghc Mgr.hs ../common/common.c -L/usr/lib64 -lxenvchan -lxenctrl
 fi

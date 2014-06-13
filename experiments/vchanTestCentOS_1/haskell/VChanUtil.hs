@@ -269,19 +269,26 @@ readChunkedMessageByteString logger vchan = do alloca $ \(size :: Ptr CInt) -> d
 -- #################################################################################3
 client_init:: Int-> IO (Ptr LibXenVChan)
 client_init otherDom = do logger <- createLogger
-                          createClientCtrl logger otherDom
+                          chan <-createClientCtrl logger otherDom
+                          destroyLogger logger
+                          return chan
+                           
                         
 
 server_init::Int-> IO (Ptr LibXenVChan)
 server_init otherDom = do logger <- createLogger
-                          createSrvCtrl logger otherDom
+                          chan <-createSrvCtrl logger otherDom
+                          destroyLogger logger
+                          return chan
 
 send :: Binary e => Ptr LibXenVChan -> e -> IO(Int)
 send chan packet = do let msg = LazyBS.toStrict $ compress $ encode packet 
                       logger <- createLogger
-                      BS.useAsCStringLen msg (\(message,sz)-> 
+                      res <-BS.useAsCStringLen msg (\(message,sz)-> 
                              liftM fromIntegral $ c_sendChunkedMessage
                                  logger chan message (fromIntegral sz ::CInt))
+                      destroyLogger logger
+                      return res
 
 
 receive :: Binary e => Ptr LibXenVChan-> IO e
@@ -291,5 +298,6 @@ receive chan = do logger <- createLogger
                    sz <- peek size
                    str <- BS.packCStringLen (ptr, fromIntegral sz:: Int)
                    free ptr
+                   destroyLogger logger
                    return $ decode $ decompress $ LazyBS.fromStrict str
 
