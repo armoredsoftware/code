@@ -21,12 +21,14 @@ how to use monads to structure effects, add new features, etc.
         --}
         
         
-data A a= Val a | A a `Plus` A a
-             | A a `Minus` A a
-             | A a `Times` A a deriving Show
+data A 
+    = Val Int
+    | A `Plus` A
+    | A `Minus` A
+    | A `Times` A deriving Show
 
           
-eval :: A Int -> Int 
+eval :: A -> Int 
 eval (Val x) = x
 eval (x `Plus` y) = (eval x) + (eval y)
 eval (x `Minus` y) = (eval x) - (eval y)
@@ -36,14 +38,15 @@ eval (x `Times` y) = (eval x) * (eval y)
         eval $ (Val 7) `Plus` (Val 8) `Minus` (Val 2) `Times` (Val 3)
         --}
 
-data  B a  = TRUE | FALSE
-              | A a `Eq` A a
-              | A a `LtEq` A a
-              | Not (B a) 
-              | B a `And` B a
+data  B 
+    = TRUE | FALSE
+    | A `Eq` A
+    | A `LtEq` A
+    | Not B 
+    | B `And` B
 
 
-eval2 :: B Int -> Bool
+eval2 :: B -> Bool
 eval2 TRUE = True
 eval2 FALSE = False
 eval2 (x `Eq` y) = (eval x) == (eval y)
