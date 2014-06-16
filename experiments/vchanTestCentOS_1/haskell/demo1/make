@@ -1,0 +1,3 @@
+#!/bin/bash
+  ghc Appraiser.hs ../../common/common.c -L/usr/lib64 -lxenvchan -lxenctrl
+  ghc Attestation.hs ../../common/common.c -L/usr/lib64 -lxenvchan -lxenctrl
