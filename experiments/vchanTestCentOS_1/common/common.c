@@ -648,3 +648,46 @@ int checkClientResponse(xentoollog_logger * xc_logger, struct libxenvchan * ctrl
   return result;
 }
 
+//####################################################################
+
+struct libxenvchan * client_init (int serverId){
+  xentoollog_logger_stdiostream * logger =  createDebugLogger();
+  int clientId = getDomId();
+  struct libxenvchan * chan  =createTransmitChanP((xentoollog_logger *)logger, serverId, clientId, "data/serverVchan");
+  
+  xtl_logger_destroy((xentoollog_logger *)logger);
+
+  return chan;
+}
+
+//####################################################################
+
+struct libxenvchan * server_init (int clientId){
+  xentoollog_logger_stdiostream * logger =  createDebugLogger();
+  struct libxenvchan * chan  =createReceiveChanP((xentoollog_logger *)logger, clientId, "data/serverVchan");
+
+  xtl_logger_destroy((xentoollog_logger *)logger);
+
+  return chan;
+}
+
+//####################################################################
+
+int send(struct libxenvchan * chan, char * message, int size){
+  xentoollog_logger_stdiostream * logger =  createDebugLogger();
+
+  int res =  sendChunkedMessage((xentoollog_logger *)logger, chan, message, size);
+  xtl_logger_destroy((xentoollog_logger *)logger);
+  return res;
+}
+
+//####################################################################
+
+char * receive(struct libxenvchan * chan, int* size){
+  xentoollog_logger_stdiostream * logger =  createDebugLogger();
+
+  char * msg=readChunkedMessage((xentoollog_logger *)logger,chan,size); 
+
+  xtl_logger_destroy((xentoollog_logger *)logger);
+  return msg;
+}

@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -fno-cse #-}
 module Demo1Utils where
 
 -- crypto libraries
@@ -26,6 +27,7 @@ type Quote = (([PCR], Nonce), Signature)
 data Shared = Appraisal Request
               | Attestation Quote
               | Result Bool
+ --             | Key PublicKey
 
 
 instance Show Shared where
@@ -33,6 +35,7 @@ instance Show Shared where
     show (Attestation quote) = "Attestation: "++(show quote)
     show (Result True) = "Appraisal succeeded."
     show (Result False) = "Appraisal failed."
+ --   show (Key x) = "PublicKey: "++(show x)
 
 
 instance Binary Shared where
@@ -42,6 +45,8 @@ instance Binary Shared where
                                         put quote
   put(Result res)                  = do put(2::Word8)
                                         put res
+ -- put(Key k)                       = do put(3::Word8)
+ --                                       put k
 
   get = do t<- get :: Get Word8
            case t of
@@ -51,6 +56,8 @@ instance Binary Shared where
                      return (Attestation quote)
              2 -> do res <- get
                      return (Result res)
+ --            3 -> do key <- get
+ --                    return (Key key)
 
   
 -- PCR primitives
@@ -73,7 +80,7 @@ pcrSelect mask =
 -- Crypto primitives
 md5 :: HashDescr
 md5 = hashDescrMD5
-
+{-# NOINLINE gen #-}
 gen :: SystemRNG
 gen = unsafePerformIO $ liftM cprgCreate createEntropyPool
 

@@ -78,8 +78,8 @@ main = do
           putStrLn ("Got my Id: "++show id)         
           (chan,server) <- prompt
           case server of
-             False -> justReceive chan
-             True -> justSend chan
+             False -> justSend chan
+             True -> justReceive chan
 {-
           
                         -- 1/2 second delay

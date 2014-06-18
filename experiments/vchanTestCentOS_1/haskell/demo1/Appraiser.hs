@@ -8,6 +8,7 @@ import Demo1Utils
 
 
 prompt:: IO (Int)
+--prompt = return 6
 prompt= loop
       where loop = do putStrLn "Which Domain ID would you like to Appraise?"
                       input <- getLine
@@ -22,17 +23,17 @@ main :: IO ()
 main = 
     do  let req = mkRequest [0..7]
         id<- getDomId 
-        putStrLn $ "Domain id: "++(show id)
+        putStrLn $ "Appraiser Domain id: "++(show id)
         other <- prompt
         chan <- client_init other
-        putStrLn $ "Sending: "++(show req)
+        putStrLn $ "Appraiser Sending: "++(show req)
         send chan req 
         ctrlWait chan
         res :: Shared<- receive chan
-        putStrLn $ "Received: "++(show res)
+        putStrLn $ "Appraiser Received: "++(show res)
         print $ evaluate req res
+        close chan
           
-        putStrLn "End"
   
 
 {- Think of an appraisal as the three step process we've talked about:

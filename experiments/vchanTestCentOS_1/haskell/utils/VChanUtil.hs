@@ -5,6 +5,7 @@ module VChanUtil
 ,server_init
 ,receive
 ,send
+,close
 ,printf
 ,createLogger
 ,destroyLogger
@@ -18,6 +19,7 @@ module VChanUtil
 ,sendBlob
 ,getBlob
 ,ctrlWait
+,ctrlClose
 ,dataReady
 ,checkMessage
 ,sendChunkedMessageString
@@ -62,6 +64,9 @@ foreign import ccall unsafe "../include/exp1Common.h createTransmitChanP"
 
 foreign import ccall unsafe "../include/exp1Common.h libxenvchan_wait"
     c_libxenvchan_wait:: (Ptr LibXenVChan)-> IO(CInt)
+
+foreign import ccall unsafe "../include/exp1Common.h libxenvchan_close"
+    c_libxenvchan_close:: (Ptr LibXenVChan)-> IO()
 
 foreign import ccall unsafe "../include/exp1Common.h readClientMessage"
     c_readClientMessage:: (Ptr XenToolLogger)->(Ptr LibXenVChan)-> CString -> Ptr CInt->IO (CInt)
@@ -207,6 +212,9 @@ getBufferSpace vchan =  liftM fromIntegral $ (c_bufferSpace vchan)
 ctrlWait :: Ptr LibXenVChan -> IO Int
 ctrlWait ctrl = liftM fromIntegral (c_libxenvchan_wait ctrl)
 
+ctrlClose :: Ptr LibXenVChan -> IO ()
+ctrlClose ctrl =c_libxenvchan_close ctrl
+
 --Returns the size of the data ready to be read from the VChan
 dataReady :: Ptr LibXenVChan -> IO Int
 dataReady ctrl = liftM fromIntegral (c_dataReady ctrl)
@@ -300,4 +308,5 @@ receive chan = do logger <- createLogger
                    free ptr
                    destroyLogger logger
                    return $ decode $ decompress $ LazyBS.fromStrict str
-
+close :: Ptr LibXenVChan -> IO ()
+close chan = ctrlClose chan

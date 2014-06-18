@@ -6,6 +6,7 @@ import VChanUtil
 import Demo1Utils
 
 prompt:: IO (Int)
+--prompt = return 6
 prompt= loop
       where loop = do putStrLn "Which Domain ID is the Appraiser?"
                       input <- getLine
@@ -23,11 +24,13 @@ main =
        chan <- server_init appraiser
        ctrlWait chan
        val:: Shared <-receive chan
-       putStrLn $ "Received: "++(show val)
+       putStrLn $ "Attestation Received: "++(show val)
        let sQuote = mkSignedQuote val
-       putStrLn $ "Sending: "++(show sQuote) 
+       putStrLn $ "Attestation Sending: "++(show sQuote) 
        send chan  sQuote
-       putStrLn ("Received: "++ (show val))
+       ctrlWait chan
+       putStr ""
+ --      close chan
          
 
 
