@@ -1,6 +1,14 @@
+module BookExactly
+    ( T(..)
+    , V(..)
+    , eval
+    , simplify
+    , eval2
+    ) where
+
 data T = TRUE |
          FALSE |
-         If T T T 
+         If T T T
 
 data V = TRUEv |
          FALSEv deriving Show
@@ -19,4 +27,11 @@ simplify (If TRUE y z) = y
 simplify (If FALSE y z) = z
 simplify (If x y z) = If (simplify x) y z
 
-
+{- Alternatively, if separate term and value spaces aren't too complex, we can
+   combine them.
+-}
+eval2 :: T -> T
+eval2 (If TRUE y _) = eval2 y
+eval2 (If FALSE _ z) = eval2 z
+eval2 (If x y z) = If (eval2 x) y z
+eval2 x = x
