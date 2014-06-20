@@ -1,0 +1,6 @@
+Z ::= (Val 5);;
+Y ::= (Val 1);;
+WHILE (Not ((Var "Z") `Eq` (Val 0))) DO
+       Y ::= (Var "Y") `Times` (Var "Z");;
+       Z ::= (Var "Z") `Minus` (Val 1);;
+END

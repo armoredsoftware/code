@@ -1,129 +1,63 @@
 module Demo1V1 where
 
--- concurrency libraries
-import Control.Concurrent
-import Control.Concurrent.STM
+import qualified Data.Word as W
+import Data.Bits
+import qualified Data.ByteString as B
+import Data.ByteString (append, pack)
 
--- crypto libraries
-import Crypto.Random
-import Crypto.PubKey.HashDescr
+
+import Data.Binary
+import Data.Maybe
+
+import Crypto.Nonce
 import Crypto.PubKey.RSA
 import Crypto.PubKey.RSA.PKCS15
+import Crypto.PubKey.HashDescr
+import Crypto.Random
 
--- utility libraries
-import Control.Exception hiding (evaluate)
 import Control.Monad
-import Data.Bits
-import Data.ByteString (ByteString, pack, append)
-import Data.Word
-import System.IO.Unsafe (unsafePerformIO)
-import Data.Binary
+
       
--- Primitive types
-type PCR = Word8
-type Mask = Word8 
-type Nonce = ByteString
-type Signature = ByteString
-type Request = (Mask, Nonce)
-type Quote = (([PCR], Nonce), Signature)
-
-data Shared = Appraisal Request
-              | Attestation Quote
-              | Result Bool
 
 
-instance Show Shared where
-    show Appraisal{} = "Appraisal"
-    show Attestation{} = "Attestation"
-    show (Result True) = "Appraisal succeeded."
-    show (Result False) = "Appraisal failed."
 
 
-instance Binary Shared where
-  put (Appraisal req)              = do put (0::Word8)
-                                        put req
-  put(Attestation quote)           = do put (1::Word8)
-                                        put quote
-  put(Result res)                  = do put(2::Word8)
-                                        put res
+-------------------------------------------------------------------------------------------------------------------------------------------
+--DATA TYPES
 
-  get = do t<- get :: Get Word8
-           case t of
-             0 -> do req <- get
-                     return (Appraisal req)
-             1 -> do quote <- get
-                     return (Attestation quote)
-             2 -> do res <- get
-                     return (Result res)
+--types for the measurements we are interested in on the target machine(list of PCR values)
+type PCRval = W.Word8
+type PCRlist = [PCRval]--PCRlist holds PCR values in increasing positional order
+type D = W.Word8 --type for the bitmap that specifies desired PCR registers. (least significant bit represents PCR 0, second-least significant is PCR 1, etc.) 
 
-  
--- PCR primitives
-pcrs :: [PCR]
-pcrs = correct --wrong
-  where correct :: [PCR]
-        correct = map bit [0..7]
 
-        wrong :: [PCR]
-        --wrong = [(bit 3)] ++ (map bit [1..7])
-        wrong = (map bit [0..6]) ++ [(bit 7)]
+type Nonce = B.ByteString
+type Request = (D, Nonce) --type for the request packet sent from appraiser to attestation agent
 
-pack' :: ([PCR], Nonce) -> ByteString
-pack' (pcrs, nonce) = pack pcrs `append` nonce
+type Signature = B.ByteString
+type SignedQuote = ((PCRlist, Nonce), Signature)
 
-pcrSelect :: Mask -> [PCR]
-pcrSelect mask = 
-    [ x | (x, n) <- zip pcrs [0..7], testBit mask n]
-
--- Crypto primitives
+-- ECA - definitely want types for non-standard functions/values.
 md5 :: HashDescr
 md5 = hashDescrMD5
 
-gen :: SystemRNG
-gen = unsafePerformIO $ liftM cprgCreate createEntropyPool
 
-pub :: PublicKey
-pri :: PrivateKey
-gen' :: SystemRNG
-((pub, pri), gen') = generate gen 255 3
+{- ECA -- Alternate version -}
 
--- Appraisal primitives
-mkRequest :: [Int] -> Request
-mkRequest mask =
-    let mask' = foldr (\ x word -> word `setBit` x) zeroBits mask in
-      (mask', fst $ cprgGenerate 16 gen)
+-- This is to handle custom errors, in addition to crypto errors.
+data MyError = AppraisalError String | CryptoError Error deriving Show
+liftErr :: Either Error a -> Either MyError a
+liftErr (Left err) = Left $ CryptoError err
+liftErr (Right res) = Right res
 
-mkSignedQuote :: Request -> STM Quote
-mkSignedQuote (mask, nonce) =
-    let pcrs' = pcrSelect mask
-        quote = (pcrs', nonce) in
-      case sign Nothing md5 pri $ pack' quote of
-         Left err -> throwSTM . ErrorCall $ show err
-         Right signature -> return (quote, signature)
-
-evaluate :: Request -> Quote -> STM Bool
-evaluate (mask, rnonce) (quote@(qpcrs, qnonce), signature) =
-    let pcrs' = pcrSelect mask in
-      do when (not $ verify md5 pub (pack' quote) signature) . throwSTM $
-              ErrorCall "Signature could not be verified."
-         when (rnonce /= qnonce) . throwSTM $
-              ErrorCall "Nonce could not be verified."
-         when (pcrs' /= qpcrs) . throwSTM $
-              ErrorCall "PCR not of expected value."
-         return True
-
--- The fun stuff
-main :: IO ()
-main = 
-    do m <- newEmptyTMVarIO
-       forkIO $ spawnAppraisal m
-       forkIO $ spawnAttestation m
-       print =<< atomically (getResult m)
-  where getResult :: TMVar Shared -> STM Bool
-        getResult m  = 
-            do v <- readTMVar m
-               case v of
-                 Result res -> return res
-                 otherwise -> retry
+main2 :: IO ()
+main2 = 
+    -- The only thing we need the IO monad for is entropy and printing (for now)
+    do g <- liftM cprgCreate createEntropyPool
+       print $ case doAppraisal2 g of
+                 Right True -> "Appraisal succeeded."
+                 Right False -> "Appraisal failed."
+                 Left err -> "Error: " ++ show err
 
 {- Think of an appraisal as the three step process we've talked about:
    1)  Send a request.
@@ -133,31 +67,93 @@ main =
    For a shallow embedding, each step should be it's own function, for clarity.
    Note that we use the Either monad to propogate errors.
 -}
-spawnAppraisal :: TMVar Shared -> IO ()
-spawnAppraisal m =
-  let req = mkRequest [0..7] in
-    do atomically $ do cond <- tryPutTMVar m $ Appraisal req
-                       when (not cond) . throwSTM $ 
-                         ErrorCall "Target not ready for request."
-       sq <- atomically $ getSignedQuote m
-       atomically $ do result <- evaluate req sq
-                       void . swapTMVar m $ Result result  
-  where getSignedQuote :: TMVar Shared -> STM Quote
-        getSignedQuote m  = 
-            do v <- readTMVar m
-               case v of
-                 Attestation sq -> return sq
-                 otherwise -> retry
+doAppraisal2 :: SystemRNG -> Either MyError Bool
+doAppraisal2 gen =
+    let req = mkRequest [0..7] gen' in
+      do quote <- mkSignedQuote req pcrs pri
+         evaluate req quote pcrs pub
+  where {- We setup the keys, pcrs, and next generator here, under the 
+           assumption that they're globally known knowledge. We can parameterize
+           later as needed. -}
+        pub :: PublicKey
+        pri :: PrivateKey
+        gen' :: SystemRNG
+        ((pub, pri), gen') = generate gen 255 3
+
+        pcrs :: PCRlist
+        pcrs = map bit [0..7]
+
+-- new version of pack for my modified quote
+pack' :: (PCRlist, Nonce) -> B.ByteString
+pack' (pcrs, nonce) = pack pcrs `append` nonce
+
+{- This is my version of your gatherTargetPCRlist function.  More efficient
+   since the list comprehension will be fused down to one traversal.
+
+   The fusion will be an efficient version of:
+   map fst (map (\ (_, n) -> testBit mask n) (zip pcrs [0..7]))
+
+   Basically, we're zipping the pcr list with indexes and using those indexes
+   to test if a bit is set in our mask.
+-}
+pcrSelect :: PCRlist -> D -> PCRlist
+pcrSelect pcrs mask =
+    [ x | x <- pcrs, n <- [0..7], testBit mask n]
+
+-- Make our request using a parameterized generator to make the nonce.
+mkRequest :: [Int] -> SystemRNG -> Request
+mkRequest mask gen = 
+    {- This is my version of your generateDesired function.  Slightly more
+       efficient since we only navigate our list once. -}
+    let mask' = foldr (\ x word -> word `setBit` x) zeroBits mask in
+      (mask', fst $ cprgGenerate 16 gen)
+
+{- Make our quote using a request and list of pcrs.  Note that we propogate
+   errors rather than discarding them.
+-}
+mkSignedQuote :: Request -> PCRlist -> PrivateKey -> Either MyError SignedQuote
+mkSignedQuote (mask, nonce) pcrs pri =
+    let pcrs' = pcrSelect pcrs mask
+        quote = (pcrs', nonce) in
+      do signature <- liftErr $ sign Nothing md5 pri $ pack' quote
+         return (quote, signature)
+
+{- Evaluate a provided quote.  Again, we propogate errors. -}
+evaluate :: Request -> SignedQuote -> PCRlist -> PublicKey 
+         -> Either MyError Bool
+evaluate (mask, rnonce) (quote@(qpcrs, qnonce), signature) pcrs pub =
+    let pcrs' = pcrSelect pcrs mask in
+      if not $ verify md5 pub (pack' quote) signature
+      then Left $ AppraisalError "Signature could not be verified."
+      else if rnonce /= qnonce
+           then Left $ AppraisalError "Nonce could not be verified."
+           else if pcrs' /= qpcrs
+                then Left $ AppraisalError "PCR not of expected value."
+                else return True
+        
 
 
-spawnAttestation :: TMVar Shared -> IO ()
-spawnAttestation m = atomically $
-  do req <- getRequest m
-     sq <- mkSignedQuote req
-     void . swapTMVar m $ Attestation sq
-  where getRequest :: TMVar Shared -> STM Request
-        getRequest m = 
-            do v <- readTMVar m
-               case v of 
-                 Appraisal req -> return req
-                 otherwise -> retry
+
+
+
+
+
+
+
+-------------------------------------------------------------------------------------------------------------------------------------------
+--STATIC DATA
+
+{-
+alteredPCRcontent :: PCRcontents
+alteredPCRcontent = ([bit 0, bit 1, bit 2, bit 3, bit 4, bit 5, bit 6, bit 7], generateDesired [0..7])
+
+--static PCR list on target(this is just for testing--once we implement measurement, we will get this from target system)
+targetPCRlist :: PCRlist
+--targetPCRlist = [empty]--[bit 0, bit 1, bit 2, bit 3, bit 4, bit 5, bit 6, bit 7]
+targetPCRlist = [bit 0, bit 1, bit 2, bit 3, bit 4, bit 5, bit 6, bit 7]
+
+--example of an expected PCR contents that an appraiser might maintain.  
+appraiserExpectedPCRcontents :: PCRcontents
+--appriaserExpectedPCRcontents = ([empty], generateDesired [0..(pcrLength - 1)]) --([bit 0, bit 1, bit 2, bit 3, bit 4, bit 5, bit 6, bit 7], generateDesired [0..(pcrLength - 1)])
+appraiserExpectedPCRcontents = ([bit 0, bit 1, bit 2, bit 3, bit 4, bit 5, bit 6, bit 7], generateDesired [0..(pcrLength - 1)])
+-}
