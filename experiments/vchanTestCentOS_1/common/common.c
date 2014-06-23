@@ -647,7 +647,7 @@ int checkClientResponse(xentoollog_logger * xc_logger, struct libxenvchan * ctrl
 
   return result;
 }
-
+//Simple Functions
 //####################################################################
 
 struct libxenvchan * client_init (int serverId){

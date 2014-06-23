@@ -4,7 +4,8 @@
 import VChanUtil
 
 import Demo1Utils
-
+import Crypto.Random.API (cprgCreate)
+import Crypto.Random (createEntropyPool)
 
 
 prompt:: IO (Int)
@@ -21,7 +22,10 @@ prompt= loop
 -- The fun stuff
 main :: IO ()
 main = 
-    do  let req = mkRequest [0..7]
+    do  e <- createEntropyPool       
+        let gen = cprgCreate e
+            req = mkRequest [0..7] gen
+            pubKey = getPubKey
         id<- getDomId 
         putStrLn $ "Appraiser Domain id: "++(show id)
         other <- prompt
@@ -31,8 +35,8 @@ main =
         ctrlWait chan
         res :: Shared<- receive chan
         putStrLn $ "Appraiser Received: "++(show res)
-        print $ evaluate req res
-        close chan
+        print $ evaluate pubKey req res
+--        close chan
           
   
 

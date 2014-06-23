@@ -13,9 +13,10 @@ import Control.Monad
 import Data.Bits
 import Data.ByteString (ByteString, pack, append)
 import Data.Word
+import System.IO
 import System.IO.Unsafe (unsafePerformIO)
 import Data.Binary
-      
+
 -- Primitive types
 type PCR = Word8
 type Mask = Word8 
@@ -45,8 +46,6 @@ instance Binary Shared where
                                         put quote
   put(Result res)                  = do put(2::Word8)
                                         put res
- -- put(Key k)                       = do put(3::Word8)
- --                                       put k
 
   get = do t<- get :: Get Word8
            case t of
@@ -56,10 +55,17 @@ instance Binary Shared where
                      return (Attestation quote)
              2 -> do res <- get
                      return (Result res)
- --            3 -> do key <- get
- --                    return (Key key)
+{-
+instance Binary PublicKey where
+  put (PublicKey size n e)         = do put size 
+                                        put n
+                                        put e 
 
-  
+  get = do size<- get :: Get Int
+           n <- get :: Get Integer 
+           e <- get :: Get Integer
+           return (PublicKey 0 0 0)
+-}
 -- PCR primitives
 pcrs :: [PCR]
 pcrs = correct --wrong
@@ -80,31 +86,65 @@ pcrSelect mask =
 -- Crypto primitives
 md5 :: HashDescr
 md5 = hashDescrMD5
-{-# NOINLINE gen #-}
-gen :: SystemRNG
-gen = unsafePerformIO $ liftM cprgCreate createEntropyPool
 
-pub :: PublicKey
-pri :: PrivateKey
-gen' :: SystemRNG
-((pub, pri), gen') = generate gen 255 3
+{-# NOINLINE getKeys #-}
+getKeys :: (PrivateKey, PublicKey)
+getKeys = unsafePerformIO $ readKeys
+
+getPriKey :: PrivateKey
+getPriKey = fst getKeys
+
+getPubKey :: PublicKey
+getPubKey = snd getKeys
+
+readKeys :: IO (PrivateKey, PublicKey)
+readKeys =
+     do handle <- openFile "keys.txt" ReadMode
+        priString <- hGetLine handle
+        pubString <- hGetLine handle
+        let pri :: PrivateKey
+            pri = read priString
+            pub :: PublicKey
+            pub = read pubString
+        hClose handle
+        return (pri, pub)
+
+
+--Utility function to be used ONCE to generate keys and ouput them to keys.txt
+exportKeys :: IO ()
+exportKeys  =
+     do e <- createEntropyPool
+        let gen :: SystemRNG
+            gen = cprgCreate e
+            ((pub, pri), _) = generate gen 255 3
+        doExport pri pub
+        putStrLn "Created file keys.txt"
+
+--Helper for exportKeys
+doExport :: PrivateKey -> PublicKey ->  IO ()
+doExport pri pub =
+                   do handle <- openFile "keys.txt" WriteMode
+                      hPutStrLn handle $ show pri
+                      hPutStrLn handle $ show pub
+                      hClose handle
+
 
 -- Appraisal primitives
-mkRequest :: [Int] -> Shared
-mkRequest mask =
-    let mask' = foldr (\ x word -> word `setBit` x) zeroBits mask in
-      Appraisal (mask', fst $ cprgGenerate 16 gen)
+mkRequest :: [Int]-> SystemRNG-> Shared
+mkRequest mask gen =
+    let mask' = foldr (\ x word -> word `setBit` x) zeroBits mask 
+     in Appraisal (mask', fst $ cprgGenerate 16 gen)
 
-mkSignedQuote :: Shared -> Shared
-mkSignedQuote (Appraisal (mask, nonce)) =
+mkSignedQuote :: PrivateKey -> Shared -> Shared
+mkSignedQuote pri (Appraisal (mask, nonce)) =
     let pcrs' = pcrSelect mask
         quote = (pcrs', nonce) in
-      case sign Nothing md5 pri $ pack' quote of
-         Left err ->  error $ show err
-         Right signature -> Attestation (quote, signature)
+        case sign Nothing md5 pri $ pack' quote of
+           Left err ->  error $ show err
+           Right signature -> Attestation (quote, signature)
 
-evaluate :: Shared -> Shared -> Shared
-evaluate (Appraisal (mask, rnonce)) (Attestation (quote@(qpcrs, qnonce), signature)) =
+evaluate :: PublicKey -> Shared -> Shared -> Shared
+evaluate pub (Appraisal (mask, rnonce)) (Attestation (quote@(qpcrs, qnonce), signature)) =
     let pcrs' = pcrSelect mask in
      if (not $ verify md5 pub (pack' quote) signature)then 
               error "Signature could not be verified."

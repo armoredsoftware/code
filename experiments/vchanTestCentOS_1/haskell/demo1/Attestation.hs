@@ -19,13 +19,14 @@ prompt= loop
 main :: IO ()
 main = 
     do id<- getDomId
+       let priKey = getPriKey
        putStrLn $ "Domain id: "++(show id)
        appraiser<- prompt
        chan <- server_init appraiser
        ctrlWait chan
        val:: Shared <-receive chan
        putStrLn $ "Attestation Received: "++(show val)
-       let sQuote = mkSignedQuote val
+       let sQuote = mkSignedQuote priKey val
        putStrLn $ "Attestation Sending: "++(show sQuote) 
        send chan  sQuote
        ctrlWait chan

@@ -3,4 +3,4 @@
   ghc Attestation.hs ../../common/common.c -L/usr/lib64 -lxenvchan -lxenctrl
   ghc testSend.hs ../../common/common.c -L/usr/lib64 -lxenvchan -lxenctrl
   ghc testReceive.hs ../../common/common.c -L/usr/lib64 -lxenvchan -lxenctrl
-  ghc CertificateAuthority.hs ../../common/common.c -L/usr/lib64 -lxenvchan -lxenctrl
+  ./scp.sh
