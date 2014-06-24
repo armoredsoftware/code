@@ -17,14 +17,14 @@ data TYPE = BOOL |
 getType :: T -> TYPE
 getType TRUE = BOOL
 getType FALSE = BOOL
-getType (If x y z) = if ((getType x) == BOOL) then
-                       if (getType y) == (getType z) then
-                         getType y else
-                         ERROR
-                       else ERROR
-getType (Pred t) = if (getType t) == NAT then NAT else ERROR
-getType (Succ t) = if (getType t) == NAT then NAT else ERROR
-getType (IsZero t) = if (getType t) == NAT then BOOL else ERROR
+getType (If x y z) = if getType x == BOOL && getType y == getType z then
+                       getType y
+                     else
+                       ERROR
+
+getType (Pred t) = if getType t == NAT then NAT else ERROR
+getType (Succ t) = if getType t == NAT then NAT else ERROR
+getType (IsZero t) = if getType t == NAT then BOOL else ERROR
 getType ZERO = NAT
 getType Val{} = NAT
 getType x = ERROR
@@ -32,26 +32,26 @@ getType x = ERROR
 
 
 eval :: T -> T
-eval (If x y z) | (getType x) ==BOOL = case (x) of
+eval (If x y z) | getType x ==BOOL = case x of
                                           (TRUE)  -> eval y
                                           (FALSE) -> eval z
                                           (_)     -> eval (If (eval x) y z)
                 | otherwise = BOOL_EXPECTED_ERROR
 eval (Succ x)
-            | (getType x) == NAT = case (x) of
+            | getType x == NAT = case x of
                                  (ZERO)  -> ZERO
                                  (Val v) -> Val (v+1)
                                  (_)     -> eval (Succ (eval x))
             | otherwise = NUM_EXPECTED_ERROR
 eval (Pred x)
-            | (getType x) ==NAT = case (x) of
+            | getType x ==NAT = case x of
                                         (ZERO)  -> Val 1
                                         (Val 1) -> ZERO
                                         (Val v) -> Val (v-1)
                                         (_)     -> eval (Pred (eval x))
             | otherwise = NUM_EXPECTED_ERROR
 eval (IsZero x)
-              | (getType x) == NAT = case (x) of
+              | getType x == NAT = case x of
                                              (ZERO) -> TRUE
                                              (Val v)-> FALSE
                                              (_)    -> eval (IsZero (eval x))
