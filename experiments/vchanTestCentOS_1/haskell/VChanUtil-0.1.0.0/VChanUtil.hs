@@ -13,8 +13,6 @@ module VChanUtil
 ,createMgrChan_Client
 ,createSrvCtrl 
 ,createClientCtrl 
---,sendPacket
---,sendPacketString
 ,sendString
 ,sendBlob
 ,getBlob
@@ -38,52 +36,51 @@ import Control.Monad
 import Data.Binary
 import qualified Data.ByteString.Lazy as LazyBS
 import qualified Data.ByteString as BS
---import Packet
 import Codec.Compression.GZip
 
 data XenToolLogger
 data LibXenVChan
 
-foreign import ccall unsafe "../include/exp1Common.h getDomId"
+foreign import ccall unsafe "exp1Common.h getDomId"
     c_getDomId:: IO CInt
 
-foreign import ccall unsafe "../include/exp1Common.h printf"
+foreign import ccall unsafe "exp1Common.h printf"
     c_printf:: CString-> IO (CInt)
 
-foreign import ccall unsafe "../include/exp1Common.h createDebugLogger"
+foreign import ccall unsafe "exp1Common.h createDebugLogger"
     c_createDebugLogger:: IO (Ptr XenToolLogger) 
 
-foreign import ccall unsafe "../include/exp1Common.h xtl_logger_destroy"
+foreign import ccall unsafe "exp1Common.h xtl_logger_destroy"
     c_destroyDebugLogger:: Ptr XenToolLogger -> IO () 
 
-foreign import ccall unsafe "../include/exp1Common.h createReceiveChanP"
+foreign import ccall unsafe "exp1Common.h createReceiveChanP"
     c_createReceiveChanP:: Ptr XenToolLogger -> CInt-> CString -> IO (Ptr LibXenVChan) 
 
-foreign import ccall unsafe "../include/exp1Common.h createTransmitChanP"
+foreign import ccall unsafe "exp1Common.h createTransmitChanP"
     c_createTransmitChanP:: Ptr XenToolLogger -> CInt-> CInt-> CString -> IO (Ptr LibXenVChan) 
 
-foreign import ccall unsafe "../include/exp1Common.h libxenvchan_wait"
+foreign import ccall unsafe "exp1Common.h libxenvchan_wait"
     c_libxenvchan_wait:: (Ptr LibXenVChan)-> IO(CInt)
 
-foreign import ccall unsafe "../include/exp1Common.h libxenvchan_close"
+foreign import ccall unsafe "exp1Common.h libxenvchan_close"
     c_libxenvchan_close:: (Ptr LibXenVChan)-> IO()
 
-foreign import ccall unsafe "../include/exp1Common.h readClientMessage"
+foreign import ccall unsafe "exp1Common.h readClientMessage"
     c_readClientMessage:: (Ptr XenToolLogger)->(Ptr LibXenVChan)-> CString -> Ptr CInt->IO (CInt)
 
-foreign import ccall unsafe "../include/exp1Common.h sendClientMessage"
+foreign import ccall unsafe "exp1Common.h sendClientMessage"
     c_sendClientMessage:: (Ptr XenToolLogger)->(Ptr LibXenVChan)-> CString ->CInt-> IO (CInt)
 
-foreign import ccall unsafe "../include/exp1Common.h libxenvchan_data_ready"
+foreign import ccall unsafe "exp1Common.h libxenvchan_data_ready"
     c_dataReady:: (Ptr LibXenVChan)-> IO (CInt)
 
-foreign import ccall unsafe "../include/exp1Common.h libxenvchan_buffer_space"
+foreign import ccall unsafe "exp1Common.h libxenvchan_buffer_space"
     c_bufferSpace:: (Ptr LibXenVChan)-> IO (CInt)
 
-foreign import ccall unsafe "../include/exp1Common.h readChunkedMessage"
+foreign import ccall unsafe "exp1Common.h readChunkedMessage"
     c_readChunkedMessage :: Ptr XenToolLogger -> Ptr LibXenVChan -> Ptr CInt->IO CString
 
-foreign import ccall unsafe "../include/exp1Common.h sendChunkedMessage"
+foreign import ccall unsafe "exp1Common.h sendChunkedMessage"
     c_sendChunkedMessage :: Ptr XenToolLogger -> Ptr LibXenVChan -> CString->CInt->IO(CInt)
 
 getDomId :: IO Int
@@ -144,32 +141,6 @@ createClientCtrlP logger srvId clientId p = do path <- newCString p
                                                         path
                                                free path
                                                return chan
-{-
---Used for Debugging, sending the string version of the Packet
-sendPacketString:: Ptr XenToolLogger->Ptr LibXenVChan->Packet-> IO Int 
-sendPacketString logger ctrl packet = do  let packetStr = show packet
-                                          msg <- newCString packetStr
-                                          res <- liftM fromIntegral $ 
-                                                  c_sendClientMessage logger
-                                                   ctrl
-                                                   msg
-                                                   (fromIntegral $ length packetStr)
-                                          free msg
-                                          return res
-
---encode compress and sends the input packet to the input VChan
-sendPacket:: (Binary e)=>Ptr XenToolLogger->Ptr LibXenVChan-> e-> IO Int
-sendPacket logger ctrl packet = let msg = LazyBS.toStrict (compress (encode packet))
-                                    size = fromIntegral (BS.length  msg):: CInt
-
-                                 in BS.useAsCStringLen msg (\(message,sz) -> do 
-                                     liftM fromIntegral $ c_sendClientMessage 
-                                                           logger
-                                                           ctrl
-                                                           message
-                                                           (fromIntegral sz))
-
--}
 --Send a string via the input vchan
 sendString :: Ptr XenToolLogger -> Ptr LibXenVChan -> String -> IO Int
 sendString logger ctrl str = do  msg <- newCString str

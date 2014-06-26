@@ -1,6 +1,4 @@
 #!/bin/bash
-  ghc Appraiser.hs ../../common/common.c -L/usr/lib64 -lxenvchan -lxenctrl
-  ghc Attestation.hs ../../common/common.c -L/usr/lib64 -lxenvchan -lxenctrl
-  ghc testSend.hs ../../common/common.c -L/usr/lib64 -lxenvchan -lxenctrl
-  ghc testReceive.hs ../../common/common.c -L/usr/lib64 -lxenvchan -lxenctrl
+  ghc Appraiser.hs 
+  ghc Attestation.hs
   ./scp.sh

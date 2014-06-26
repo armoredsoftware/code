@@ -17,6 +17,9 @@ import System.IO
 import System.IO.Unsafe (unsafePerformIO)
 import Data.Binary
 
+
+import Debug.Trace
+
 -- Primitive types
 type PCR = Word8
 type Mask = Word8 
@@ -55,17 +58,18 @@ instance Binary Shared where
                      return (Attestation quote)
              2 -> do res <- get
                      return (Result res)
-{-
+
 instance Binary PublicKey where
   put (PublicKey size n e)         = do put size 
                                         put n
                                         put e 
 
   get = do size<- get :: Get Int
-           n <- get :: Get Integer 
-           e <- get :: Get Integer
-           return (PublicKey 0 0 0)
--}
+           n <- traceShow size (get :: Get Integer)
+           e <- traceShow n (get :: Get Integer)
+           () <- traceShow e (return ())
+           return (PublicKey size n e)
+
 -- PCR primitives
 pcrs :: [PCR]
 pcrs = correct --wrong
@@ -89,13 +93,17 @@ md5 = hashDescrMD5
 
 {-# NOINLINE getKeys #-}
 getKeys :: (PrivateKey, PublicKey)
-getKeys = unsafePerformIO $ readKeys
+getKeys = unsafePerformIO readKeys
 
 getPriKey :: PrivateKey
 getPriKey = fst getKeys
 
 getPubKey :: PublicKey
 getPubKey = snd getKeys
+
+--readKeys ::Maybe (PublicKey,PrivateKey)
+--readKeys = generateWith (3,7) 255 0x10001
+
 
 readKeys :: IO (PrivateKey, PublicKey)
 readKeys =
@@ -130,6 +138,10 @@ doExport pri pub =
 
 
 -- Appraisal primitives
+mkHCRequest :: [Int] -> Shared
+mkHCRequest mask = let mask' = foldr (\ x word -> word `setBit` x) zeroBits mask
+                    in Appraisal(mask', pack [3]) 
+
 mkRequest :: [Int]-> SystemRNG-> Shared
 mkRequest mask gen =
     let mask' = foldr (\ x word -> word `setBit` x) zeroBits mask 
