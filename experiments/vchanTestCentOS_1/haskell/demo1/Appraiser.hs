@@ -5,7 +5,7 @@ import VChanUtil
 
 import Control.Monad
 import Demo1Utils
---import Crypto.Random.API (cprgCreate)
+import Crypto.Random.API (cprgCreate)
 import Crypto.Random (createEntropyPool)
 
 import Data.Maybe
@@ -29,7 +29,7 @@ main =
        id <-getDomId
        putStrLn $ "ID: "++(show id)
        e <- createEntropyPool       
-       let --gen = cprgCreate e
+       let gen = cprgCreate e `seq` undefined
            req = mkRequest --[0..7] gen
            --pubKey = getPubKey
        id <- getDomId 
