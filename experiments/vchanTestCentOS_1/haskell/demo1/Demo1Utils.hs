@@ -1,16 +1,18 @@
 module Demo1Utils where
 
 -- crypto libraries
+{-
 import Crypto.Random
 import Crypto.PubKey.HashDescr
 import Crypto.PubKey.RSA
 import Crypto.PubKey.RSA.PKCS15
+-}
 
 -- utility libraries
 import Control.Exception hiding (evaluate)
 import Control.Monad
 import Data.Bits
-import Data.ByteString (ByteString, pack, append)
+import Data.ByteString (empty, ByteString, pack, append)
 import Data.Word
 import Data.Binary
 
@@ -53,6 +55,7 @@ instance Binary Shared where
              2 -> do res <- get
                      return (Result res)
 
+{-
 instance Binary PublicKey where
   put (PublicKey size n e)         = do put size 
                                         put n
@@ -62,6 +65,7 @@ instance Binary PublicKey where
            n <- get :: Get Integer
            e <- get :: Get Integer
            return (PublicKey size n e)
+-}
 
 -- PCR primitives
 pcrs :: [PCR]
@@ -80,6 +84,7 @@ pcrSelect :: Mask -> [PCR]
 pcrSelect mask = 
     [ x | (x, n) <- zip pcrs [0..7], testBit mask n]
 
+{-
 -- Crypto primitives
 md5 :: HashDescr
 md5 = hashDescrMD5
@@ -89,8 +94,10 @@ getPriKey = read "PrivateKey {private_pub = PublicKey {public_size = 255, public
 
 getPubKey :: PublicKey
 getPubKey = read "PublicKey {public_size = 255, public_n = 102286069932676439648989610886255086928576415518262989979373822015820473373298917309733169334894078663465654813864795992449002045611618216772107694197239257596906542050824783238423207486620502143852233549323662152913901003839469666106229002333522968796158867719639428162864654318447376554421419853368463460816825839927433535917321040438586195662077833617329460445116174171898844177231110696685109366473693437397141808391998779551680848144607092586071677413344299799355118323107087687451233061481752344137717053392877992158280177371084919091236794566182554721486704343862690413716546638718184408877205483804028378127, public_e = 3}"
+-}
 
 -- Appraisal primitives
+{-
 mkHCRequest :: [Int] -> Shared
 mkHCRequest mask = let mask' = foldr (\ x word -> word `setBit` x) zeroBits mask
                     in Appraisal(mask', pack [3]) 
@@ -99,7 +106,12 @@ mkRequest :: [Int]-> SystemRNG-> Shared
 mkRequest mask gen =
     let mask' = foldr (\ x word -> word `setBit` x) zeroBits mask 
      in Appraisal (mask', fst $ cprgGenerate 16 gen)
+-}
 
+mkRequest :: Shared
+mkRequest = Appraisal (0, empty)
+
+{-
 mkSignedQuote :: PrivateKey -> Shared -> Shared
 mkSignedQuote pri (Appraisal (mask, nonce)) =
     let pcrs' = pcrSelect mask
@@ -107,7 +119,12 @@ mkSignedQuote pri (Appraisal (mask, nonce)) =
         case sign Nothing md5 pri $ pack' quote of
            Left err ->  error $ show err
            Right signature -> Attestation (quote, signature)
+-}
 
+mkSignedQuote :: Shared
+mkSignedQuote = Attestation (([], empty), empty)
+
+{-
 evaluate :: PublicKey -> Shared -> Shared -> Shared
 evaluate pub (Appraisal (mask, rnonce)) (Attestation (quote@(qpcrs, qnonce), signature)) =
     let pcrs' = pcrSelect mask in
@@ -121,3 +138,7 @@ evaluate pub (Appraisal (mask, rnonce)) (Attestation (quote@(qpcrs, qnonce), sig
               error "PCR not of expected value."
          else
            Result True
+-}
+
+evaluate :: Shared
+evaluate = Result True

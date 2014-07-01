@@ -5,8 +5,10 @@ import VChanUtil
 
 import Control.Monad
 import Demo1Utils
+{-
 import Crypto.Random.API (cprgCreate)
 import Crypto.Random (createEntropyPool)
+-}
 import Data.Maybe
 
 
@@ -27,10 +29,10 @@ main =
     do  
        id <-getDomId
        putStrLn $ "ID: "++(show id)
-       e <- createEntropyPool       
-       let gen = cprgCreate e
-           req = mkRequest [0..7] gen
-           pubKey = getPubKey
+       --e <- createEntropyPool       
+       let --gen = cprgCreate e
+           req = mkRequest --[0..7] gen
+           --pubKey = getPubKey
        id <- getDomId 
        putStrLn $ "Appraiser Domain id: "++(show id)
        other <- prompt
@@ -40,7 +42,7 @@ main =
        ctrlWait chan
        res :: Shared <- receive chan
        putStrLn $ "Appraiser Received: "++(show res)
-       print $ evaluate pubKey req res
+       print $ evaluate --pubKey req res
        
 --        close chan
           
