@@ -58,10 +58,9 @@ instance Binary PublicKey where
                                         put n
                                         put e 
 
-  get = do size<- get :: Get Int
-           n <- size (get :: Get Integer)
-           e <- n (get :: Get Integer)
-           () <- e (return ())
+  get = do size <- get :: Get Int
+           n <- get :: Get Integer
+           e <- get :: Get Integer
            return (PublicKey size n e)
 
 -- PCR primitives
