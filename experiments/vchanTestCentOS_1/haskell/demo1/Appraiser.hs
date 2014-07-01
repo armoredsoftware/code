@@ -5,8 +5,8 @@ import VChanUtil
 
 import Control.Monad
 import Demo1Utils
-import Crypto.Random.API (cprgCreate, SystemRNG)
-import Crypto.Random (createEntropyPool)
+import Crypto.Random.API (cprgCreate)
+import Crypto.Random (createEntropyPool, SystemRNG)
 
 import Data.Maybe
 
