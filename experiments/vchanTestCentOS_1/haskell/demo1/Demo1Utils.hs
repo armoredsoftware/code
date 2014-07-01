@@ -1,4 +1,3 @@
-{-# OPTIONS_GHC -fno-cse #-}
 module Demo1Utils where
 
 -- crypto libraries
@@ -91,6 +90,7 @@ pcrSelect mask =
 md5 :: HashDescr
 md5 = hashDescrMD5
 
+{-
 {-# NOINLINE getKeys #-}
 getKeys :: (PrivateKey, PublicKey)
 getKeys = unsafePerformIO readKeys
@@ -103,20 +103,25 @@ getPubKey = snd getKeys
 
 --readKeys ::Maybe (PublicKey,PrivateKey)
 --readKeys = generateWith (3,7) 255 0x10001
+-}
 
-
-readKeys :: IO (PrivateKey, PublicKey)
-readKeys =
-     do handle <- openFile "keys.txt" ReadMode
+getPriKey :: IO PrivateKey
+getPriKey =
+     do handle <- openFile "prikey.txt" ReadMode
         priString <- hGetLine handle
-        pubString <- hGetLine handle
         let pri :: PrivateKey
             pri = read priString
-            pub :: PublicKey
+        hClose handle
+        return pri
+
+getPubKey :: IO PublicKey
+getPubKey =
+     do handle <- openFile "pubkey.txt" ReadMode
+        pubString <- hGetLine handle
+        let pub :: PubvateKey
             pub = read pubString
         hClose handle
-        return (pri, pub)
-
+        return pub
 
 --Utility function to be used ONCE to generate keys and ouput them to keys.txt
 exportKeys :: IO ()

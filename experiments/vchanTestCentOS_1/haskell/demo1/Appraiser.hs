@@ -30,15 +30,15 @@ main =
        e <- createEntropyPool       
        let gen = cprgCreate e
            req = mkRequest [0..7] gen
-           pubKey = getPubKey
-       id<- getDomId 
+       pubKey <- getPubKey
+       id <- getDomId 
        putStrLn $ "Appraiser Domain id: "++(show id)
        other <- prompt
        chan <- client_init other
        putStrLn $ "Appraiser Sending: "++(show req)
        send chan req 
        ctrlWait chan
-       res :: Shared<- receive chan
+       res :: Shared <- receive chan
        putStrLn $ "Appraiser Received: "++(show res)
        print $ evaluate pubKey req res
        
