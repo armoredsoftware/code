@@ -118,7 +118,7 @@ getPubKey :: IO PublicKey
 getPubKey =
      do handle <- openFile "pubkey.txt" ReadMode
         pubString <- hGetLine handle
-        let pub :: PubvateKey
+        let pub :: PublicKey
             pub = read pubString
         hClose handle
         return pub

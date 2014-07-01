@@ -1,4 +1,4 @@
 #!/bin/bash
-  ghc Appraiser.hs 
-  ghc Attestation.hs
+  ghc --make Appraiser.hs -lxenstore 
+  ghc --make Attestation.hs -lxenstore
   ./scp.sh
