@@ -29,8 +29,8 @@ main =
        id <-getDomId
        putStrLn $ "ID: "++(show id)
        e <- createEntropyPool       
-       let gen = (cprgCreate e :: SystemRNG) `seq` undefined
-           req = mkRequest --[0..7] gen
+       let gen = cprgCreate e
+           req = mkRequest [0..7] gen
            --pubKey = getPubKey
        id <- getDomId 
        putStrLn $ "Appraiser Domain id: "++(show id)
