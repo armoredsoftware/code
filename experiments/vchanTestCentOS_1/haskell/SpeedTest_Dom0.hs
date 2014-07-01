@@ -39,7 +39,8 @@ speedTest logger ctrl= forever $ do
 
 
 main = do logger <- createLogger
-          ctrlMgr <- createMgrChan_Client logger 1 
+          id <- getDomId
+          ctrlMgr <-client_init id  
           speedTest logger ctrlMgr  
       
           
