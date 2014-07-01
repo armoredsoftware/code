@@ -21,7 +21,7 @@ prompt= loop
 main :: IO ()
 main = 
     do id <- getDomId
-       priKey <- getPriKey
+       let priKey = getPriKey
        putStrLn $ "Domain id: "++(show id)
        appraiser<- prompt
        chan <- server_init appraiser

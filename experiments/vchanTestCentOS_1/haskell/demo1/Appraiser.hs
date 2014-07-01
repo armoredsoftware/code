@@ -30,7 +30,7 @@ main =
        e <- createEntropyPool       
        let gen = cprgCreate e
            req = mkRequest [0..7] gen
-       pubKey <- getPubKey
+           pubKey = getPubKey
        id <- getDomId 
        putStrLn $ "Appraiser Domain id: "++(show id)
        other <- prompt
