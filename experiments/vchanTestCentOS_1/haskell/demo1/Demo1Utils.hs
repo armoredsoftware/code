@@ -111,10 +111,10 @@ mkSignedQuote :: PrivateKey -> Shared -> Shared
 mkSignedQuote pri (Appraisal (mask, nonce)) =
     let pcrs' = pcrSelect mask
         quote = (pcrs', nonce) in
-        case sign Nothing md5 pri $ pack' quote of
-           Left err ->  error $ show err
-           Right signature -> Attestation (quote, signature)
-
+        --case sign Nothing md5 pri $ pack' quote of
+        --   Left err ->  error $ show err
+        --   Right signature -> Attestation (quote, signature)
+      Attestation (quote, empty)
 {-
 evaluate :: PublicKey -> Shared -> Shared -> Shared
 evaluate pub (Appraisal (mask, rnonce)) (Attestation (quote@(qpcrs, qnonce), signature)) =
