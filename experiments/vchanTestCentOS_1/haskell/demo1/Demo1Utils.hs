@@ -4,10 +4,8 @@ module Demo1Utils where
 
 import Crypto.Random
 import Crypto.PubKey.HashDescr
-{-
 import Crypto.PubKey.RSA
 import Crypto.PubKey.RSA.PKCS15
--}
 
 -- utility libraries
 import Control.Exception hiding (evaluate)
