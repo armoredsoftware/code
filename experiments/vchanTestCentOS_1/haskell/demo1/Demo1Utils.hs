@@ -107,7 +107,6 @@ mkRequest mask gen =
     let mask' = foldr (\ x word -> word `setBit` x) zeroBits mask 
      in Appraisal (mask', fst $ cprgGenerate 16 gen)
 
-{-
 mkSignedQuote :: PrivateKey -> Shared -> Shared
 mkSignedQuote pri (Appraisal (mask, nonce)) =
     let pcrs' = pcrSelect mask
@@ -115,10 +114,6 @@ mkSignedQuote pri (Appraisal (mask, nonce)) =
         case sign Nothing md5 pri $ pack' quote of
            Left err ->  error $ show err
            Right signature -> Attestation (quote, signature)
--}
-
-mkSignedQuote :: Shared
-mkSignedQuote = Attestation (([], empty), empty)
 
 {-
 evaluate :: PublicKey -> Shared -> Shared -> Shared
