@@ -95,7 +95,6 @@ mkSignedQuote pri (Appraisal (mask, nonce)) =
         signature = sign pri $ pack' quote in
       Attestation (quote, signature)
 
-{-
 evaluate :: PublicKey -> Shared -> Shared -> Shared
 evaluate pub (Appraisal (mask, rnonce)) 
              (Attestation (quote@(qpcrs, qnonce), signature)) =
@@ -110,4 +109,3 @@ evaluate pub (Appraisal (mask, rnonce))
               error "PCR not of expected value."
          else
            Result True
--}
