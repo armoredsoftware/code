@@ -10,7 +10,7 @@ import Foreign
 main = do logger <- createLogger
           id <- getDomId
           putStrLn ("My Dom Id: "++show id)         
-          ctrlMgr <- createMgrChan_Srv logger
+          ctrlMgr <- server_init id
 
           loop ctrlMgr
           start <- getCurrentTime
