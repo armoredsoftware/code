@@ -15,6 +15,7 @@ keyboard --vckeymap=us --xlayouts='us'
 lang en_US.UTF-8
 
 services --disabled=NetworkManager,firstboot
+services --enabled=network,ntpdate,ntpd
 
 # Network information
 
@@ -35,12 +36,12 @@ selinux --disabled
 # Reboot after install is complete.
 reboot
 
+#
+%include /tmp/part.inc
+
 %packages
 @core
-@server-policy
-@workstation-policy
 git
-emacs
 
 %end
 
@@ -66,6 +67,8 @@ if [ ${NODEID} -eq 0 ] ; then
   /bin/sh
   halt
 fi
+
+echo "network --onboot=yes --bootproto=dhcp --hostname=compute${NODEID}.@CLOUD_EXT_DOMAIN@" | tee -a /tmp/part.inc
 
 %end
 
@@ -133,6 +136,7 @@ grep -q 'NODEID=[[:alnum:]]' /proc/cmdline
 NODEID=$(sed 's/.* NODEID=\([^[:space:]]*\).*/\1/' /proc/cmdline)
 
 EM1_CONFIG_FILE=/etc/sysconfig/network-scripts/ifcfg-em1
+P5P1_CONFIG_FILE=/etc/sysconfig/network-scripts/ifcfg-p5p1
 
 # Make the networking static.
 #setup em1
@@ -158,6 +162,24 @@ IPV4_FAILURE_FATAL=no
 NAME="System em1"
 EOF
 
+UUID=$(grep -e '^UUID=' ${P5P1_CONFIG_FILE} | sed -e 's/UUID=//')
+HWADDR=$(grep -e '^HWADDR=' ${P5P1_CONFIG_FILE} | sed -e 's/HWADDR=//')
+
+cat > ${P5P1_CONFIG_FILE} <<EOF
+UUID=${UUID}
+BOOTPROTO=none
+DEVICE=p5p1
+ONBOOT=yes
+IPV6INIT=no
+HWADDR=${HWADDR}
+TYPE=Ethernet
+IPADDR=@CLOUD_DATA_COMPUTE_IPADDR_PREFIX@.${NODEID}
+NETMASK=@CLOUD_EXT_NETMASK@
+GATEWAY=@CLOUD_EXT_ROUTER_IPADDR@
+IPV4_FAILURE_FATAL=no
+NAME="System p5p1"
+EOF
+
 # Set up the name resolution file.
 cat > /etc/resolv.conf <<EOF
 domain		       @CLOUD_EXT_DOMAIN@
@@ -166,6 +188,7 @@ nameserver	@CLOUD_EXT_ROUTER_IPADDR@
 EOF
 
 # Bring up the interface.
+ifdown em1
 ifup em1
 
 %end
