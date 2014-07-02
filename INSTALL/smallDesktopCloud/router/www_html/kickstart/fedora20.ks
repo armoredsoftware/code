@@ -37,6 +37,10 @@ reboot
 
 %packages
 @core
+@server-policy
+@workstation-policy
+git
+emacs
 
 %end
 
