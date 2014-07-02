@@ -87,6 +87,12 @@ else
   cp -v * ${TFTPBOOT_DIR}/pxelinux.cfg
 
   cd ${SHELLDIR}
+
+  cd tftpboot/images
+  cp -v -r * ${TFTPBOOT_DIR}/images
+
+
+  cd ${SHELLDIR}
   
   if [ ! -d ${WWW_DIR} ] ; then
     echo "The directory '${WWW_DIR}' does not exit. Has httpd been installed?"
