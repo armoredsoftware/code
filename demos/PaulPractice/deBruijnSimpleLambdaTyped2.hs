@@ -1,6 +1,6 @@
 module DeBruijnSimpleLambdaTyped2 where
 import Data.Maybe
-import Data.Map (delete)
+
 data T =   Var Int
          | Varc Char
          | Abst Type T
@@ -15,109 +15,121 @@ data T =   Var Int
 data Type = BOOL | Other | Type `ToType` Type deriving (Show, Eq)
 
 --Variable as fst, bound term as snd
-type Binding = (T,T)
+data BoundThing = Bterm T
+                | Btype Type
+
+type Binding = (T,BoundThing)
+type Variables = [Binding]
 type Context = [Binding]
-emptyContext = ([] :: Context) --handy
+
+emptyContext = ([] :: Context) --handy notation
+emptyVariables = ([] :: Variables) --footy. jk handy notation
+
+update :: Binding -> [Binding] -> Either String [Binding]
+update (x, y) lst | isVariable x = case y of
+                                      (Bterm term) -> if x == term then
+                                                Left ("Error: Improper Binding. Variable expected as fst. Instead found: " ++ (show x))
+                                                else Right ((x,y):(removee x lst))
+                                      (Btype typ) -> Right ((x,y): (removee x lst))             
+                  | otherwise = Left ("Error: Improper Binding. Variable expected as fst. Instead found: " ++ (show x))
 
 
---adds a variable binding to the given context.
-addBinding :: Context -> (T,T) -> Either String Context
-addBinding c (x,y) | isVariable x = if x == y then 
-                                     Left ("Circular Variable Assignment not allowed! Cause: " ++ (show x) )
-                                    else Right ((x,y):c)
-                   | otherwise = Left ("Error: Improper Binding. Variable expected as fst. Instead found: " ++ (show x))
+increaseVars :: [Binding] -> [Binding]
+increaseVars lst = fmap (\(x,y)-> case x of
+                                             (Var v) -> ((Var (v+1)),y)
+                                             _ -> (x,y)) lst
 
---performs the lookup for what the value of a variable is. 
-getBinding :: Context -> T -> Either String T
-getBinding c v | isVariable v = performLookup c v
-               | otherwise = Left ("Error: Non-variable value used as variable in getBinding. Namely: " ++ (show v) )
 
---removes the FIRST occurance of the given key
-removeBinding :: Context -> T -> Context
-removeBinding c k = removeBindingHelper c k emptyContext
+gett :: T -> [Binding] -> Either String BoundThing
+gett x lst | isVariable x = performLookup x lst
+           | otherwise = Left ("Error: Non-variable value used as variable in getBinding. Namely: " ++ (show x) )
 
-removeBindingHelper :: Context -> T -> Context -> Context
-removeBindingHelper [] _ new = new
-removeBindingHelper (o:ld) key new = if (fst o) == key then 
-                                   new ++ ld 
-                                  else
-                                   removeBindingHelper ld key ( new ++ [o])
-                                 
-                                   
-
---a helper function for getBinding.
-performLookup :: Context -> T -> Either String T
-performLookup c v = case (lookup v c) of
+removee :: T -> [Binding] -> [Binding]
+removee k lst = filter (\x -> fst x /= k) lst
+ 
+                                                                  
+--a helper function for gett.
+performLookup :: T -> [Binding]-> Either String BoundThing
+performLookup k lst = case (lookup k lst) of
                      (Just x) -> Right x
-                     Nothing -> Left ("Uhoh, Variable '" ++ (show v) ++ "' not found in context")
+                     Nothing -> Left ("Uhoh, Variable '" ++ (show k) ++ "' not found in context")
 
---does unboxing, gives empty context if malformed/left value
-striptoContext :: Either String Context -> Context
-striptoContext (Right c) = c
-striptoContext  _ = emptyContext
+--does unboxing, gives empty  if malformed/left value
+strip :: Either String [Binding] -> [Binding]
+strip (Right c) = c
+strip  _ = ([] :: [Binding])
+
 
 
 
 --checks if the term is a variable term or not
 isVariable :: T -> Bool
 isVariable (Varc _ ) = True
---isVariable (Var _) = True
+isVariable (Var _) = True
 isVariable _ = False
 
 
 --performs a type check and then evaluates if the type checks out
-run :: Context -> T -> Either String T
-run c x = case (getType c x 0) of
-         (Right _) -> Right (eval c x)
+run :: Variables -> T -> Either String T
+run vars term = case (getType vars emptyContext term) of
+         (Right _) -> Right (eval vars term)
          (Left l) -> Left l
 
 --determines the type of the term for a given context. 
-getType :: Context -> T ->Int-> Either String Type
-getType _ TRUE _ = Right BOOL
-getType _ FALSE _ = Right BOOL
-getType c (IF x y z) i = case (getType c x i) of
+getType :: Variables ->Context-> T-> Either String Type
+getType _ _ TRUE = Right BOOL
+getType _ _ FALSE = Right BOOL
+getType vars context (IF x y z) = case (getType vars context x) of
                       (Right BOOL) -> ans 
                                       where
-                                       t1 = getType c y i
-                                       t2 = getType c z i
+                                       t1 = getType vars context y
+                                       t2 = getType vars context z
                                        ans = if t1 ==t2 then t1 else Left "Error: Mismatched return values in IF expression"
                       (Right _) -> Left "Error: BOOL expected in IF expression"
                       (Left _) -> Left "Error: Did not resolve to a known type in IF expression conditional"
-getType c (Abst tp bod) i = case tp of
-                       (t1 `ToType` t2) -> Right tp
-                       (x) -> Left "Malformed function type"
-getType c (App (Abst tt _) v) i = case tt of --check the type of the function to be correct, like above case
-                                 (t1 `ToType` t2) -> if x == (Right t1) then 
-                                                      Right t2 
-                                                     else  --case statement for more meaningful errors
-                                                      case x of
-                                                       (Right r) -> 
-                                                            Left ("Error: Substitution of wrong type" ++ (show r) ++ " caused issue.")
-                                                       (Left l) -> Left ("Error: Substitution of wrong type caused by: " ++ l  )
-                                                     where x = getType c v i
-                                 _ -> Left "Error: Malformed fucntion type"
-getType c (App _ b) i = getType c b i
-getType c x i | isVariable x = case (getBinding c x) of
-                              (Right r) -> getType c r i
-                              (Left l) -> Left l
-              | otherwise = Left "Programmer error: Non-exhaustive pattern matching in getType"
+getType vars context (Abst tp bod) = getType vars (strip( update ((Var 0),(Btype tp)) (increaseVars context))) bod
+--if v has the same type as tp then we're good with type tp. otherwise, give a meaningful error message.
+getType vars context (App (Abst tp bod) v) | abstType == vType = vType
+                                           | otherwise = case (abstType, vType) of
+                                                            --hindsight says a monad would have been nice here.
+                                                            ((Right ra),(Right rv)) -> Left ("Error: Substitution of wrong type: " ++ 
+                                                                               (show ra) ++ " and " ++ (show rv) ++ " caused issue.")
+                                                            ((Right ra),(Left lv)) -> Left ("Error: Substitution variable did not" ++ 
+                                                                                           "resolve to type: " ++ lv)
+                                                            ((Left la),(Right rv)) -> Left ("Error: Substitution failure. Abstraction"
+                                                                                       ++ "did not resolve to type: " ++ la)
+                                                            ((Left la),(Left lv)) -> Left ("Error: Substitution failure. Abstraction"
+                                                                                          ++ "did not resolve to type: " ++ la ++ 
+                                                                                          "Error: Substitution variable did not" ++ 
+                                                                                           "resolve to type: " ++ lv)
+                                             
+                                            where vType = getType vars context v
+                                                  abstType = getType vars context (Abst tp bod)
+--if the first part isn't an abstraction, no substitution. Therefore I am only interested in the type of the second part. 
+getType vars context (App _ b) = getType vars context b
+getType vars context x = case x of
+                            (Var x) -> case (gett (Var x) context) of
+                                         (Right (Btype t)) ->  Right t
+                                         (Left l) -> Left l
+                            (Varc x) -> case (gett (Varc x) vars) of
+                                         (Right (Bterm r)) -> getType vars context r
+                                         (Left l) -> Left l
 
- 
 --evaluates a term. Assumed types check out when called.
-eval :: Context -> T -> T
-eval c (App a b)  | isReducible a = eval c (App (eval c a) b) --E-APP1    Context shouldn't be changing so I think this is okay for now
-                  | isReducible b = eval c (App a (eval c b)) --E-APP2
+eval :: Variables -> T -> T
+eval vars (App a b)  | isReducible a = eval vars (App (eval vars a) b) --E-APP1    Context shouldn't be changing so I think this is okay for now
+                  | isReducible b = eval vars (App a (eval vars b)) --E-APP2
                   | otherwise     = case a of
-                                     (Abst _ x)  -> eval c (sub ( a, (increaseFrees b))) --E-APPABS
-                                     (Var x)   -> App (Var x) (eval c b)
-                                     (_)       -> App (eval c a) (eval c b) --should never get here
-eval c (IF x y z) | x == TRUE  = eval c y
-                  | x == FALSE = eval c z
-                  | otherwise  = eval c (IF (eval c x) y z)
-eval c x | isVariable x = case performLookup c x of
-                           (Right r) -> eval c r
+                                     (Abst _ x)  -> eval vars (sub ( a, (increaseFrees b))) --E-APPABS
+                                     (Var x)   -> App (Var x) (eval vars b)
+                                     (_)       -> App (eval vars a) (eval vars b) --should never get here
+eval vars (IF x y z) | x == TRUE  = eval vars y
+                  | x == FALSE = eval vars z
+                  | otherwise  = eval vars (IF (eval vars x) y z)
+eval vars x | isVariable x = case performLookup x vars of
+                           (Right (Bterm r)) -> eval vars r
                            _ -> Varc 'Z' --should never get here if argument to eval is first type checked.
-         | otherwise = x
+            | otherwise = x
 
 isReducible :: T -> Bool
 isReducible (App Abst{} _) = True
