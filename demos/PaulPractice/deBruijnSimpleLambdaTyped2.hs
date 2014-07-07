@@ -12,11 +12,15 @@ data T =   Var Int
 
 
 --the Other type is for correctness checking
-data Type = BOOL | Other | Type `ToType` Type deriving (Show, Eq)
+data Type = BOOL 
+          | Other 
+          | Type `ToType` Type 
+          deriving (Show, Eq)
 
 --Variable as fst, bound term as snd
 data BoundThing = Bterm T
-                | Btype Type deriving (Show, Eq)
+                | Btype Type 
+                deriving (Show, Eq)
 
 type Binding = (T,BoundThing)
 type Variables = [Binding]
@@ -123,7 +127,6 @@ getType vars context x = case x of
                             (Varc v) -> case gett (Varc v) vars of
                                          (Right (Bterm r)) -> getType vars context r
                                          (Left l) -> Left l
-
 
 
 --evaluates a term. NOTE: Assumed types check out when called.
