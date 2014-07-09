@@ -20,15 +20,15 @@ data Message = Request
 type Request = (DesiredEvidence,Nonce)
 type DesiredEvidence = [EvidenceDescriptor]
 data EvidenceDescriptor = D0 | D1 | D2 | D3 | D4 | D5 | D6 --for now
-type Nonce = Int
+type Nonce = ByteString
 
 --Response
 data Response = MetaResp (Hash, Nonce)
               | InfoResp (Evidence, Nonce)
 
 type Hash = ByteString
-data Evidence = [EvidencePiece]
-data EvidencePiece = ByteString --for now 
+type Evidence = [EvidencePiece]
+type EvidencePiece = ByteString --for now 
 
 --Measurement
 type MeasurementRequest = (EvidenceDescriptor, Nonce)
