@@ -100,7 +100,7 @@ linux_entry ()
 #      if [ x$type = xrecovery ] ; then
 #	  title="$(gettext_printf "%s, with Xen %s  and Flask and Linux %s (recovery mode)" "${os}" "${xen_version}" "${version}")"
 #      else
-	  title="$(gettext_printf "%s, with Xen %s  and Flask and Linux %s" "${os}" "${xen_version}" "${version}")"
+	  title="$(gettext_printf "%s, with Xen %s, Flask %s and Linux %s" "${os}" "${xen_version}" ${flask_file} "${version}")"
 #      fi
       replacement_title="$(echo "Advanced options for ${OS}" | sed 's,>,>>,g')>$(echo "$title" | sed 's,>,>>,g')"
       if [ x"Xen ${xen_version}>$title" = x"$GRUB_ACTUAL_DEFAULT" ]; then
@@ -297,9 +297,9 @@ while [ "x${xen_list}" != "x" ] ; do
 	    flask_reldirname=`make_system_path_relative_to_its_root ${flask_dirname}`
 
 	    if [ "x$is_first_entry" = xtrue ]; then
-#	        linux_entry "${OS}" "${version}" "${xen_version}" simple \
-#		    "${GRUB_CMDLINE_LINUX} ${GRUB_CMDLINE_LINUX_DEFAULT}" "${GRUB_CMDLINE_XEN} ${GRUB_CMDLINE_XEN_DEFAULT}"
-#
+	        linux_entry "${OS}" "${version}" "${xen_version}" "${flask_reldirname}/${flask_basename}" simple \
+		    "${GRUB_CMDLINE_LINUX} ${GRUB_CMDLINE_LINUX_DEFAULT}" "${GRUB_CMDLINE_XEN} ${GRUB_CMDLINE_XEN_DEFAULT}"
+
 	        submenu_indentation="$grub_tab$grub_tab"
     
 	        if [ -z "$boot_device_id" ]; then
