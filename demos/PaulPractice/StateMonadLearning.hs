@@ -4,6 +4,13 @@ import Data.Maybe
 import Control.Monad.Writer
 import Control.Monad.State
 
+import Control.Monad.Identity
+import Control.Monad.Trans.Except
+import Control.Monad.Reader
+import Data.Maybe
+import qualified Data.Map as Map
+
+
 data T =   Var Int
          | Varc Char
          | Abst Type T
@@ -80,7 +87,7 @@ isVariable _ = False
 --performs a type check and then evaluates if the type checks out
 run :: Variables -> T -> Either String T
 run vars term = case getType vars emptyContext term of
-         (Right _) -> Right (eval vars term)
+         (Right _) -> Right (runIdentity $ eval vars term)
          (Left l) -> Left l
 
 --determines the type of the term for a given context. 
@@ -136,24 +143,28 @@ getType vars context x = case x of
 
 --evaluates a term. NOTE: Assumed types check out when called.
 
+type Eval1 a = Identity a
+runEval1 = runIdentity
 
-eval :: Variables -> T -> T
-eval vars (App a b)  | isReducible a = eval vars (App (eval vars a) b) --E-APP1 Vars shouldn't change so I think okay for now
-                     | isReducible b = eval vars (App a (eval vars b)) --E-APP2
+type Eval2 a = ExceptT String Identity a
+
+eval :: (Monad m) =>Variables -> T -> m T
+eval vars (App a b)  | isReducible a = eval vars (App (runIdentity $ eval vars a) b) --E-APP1 Vars shouldn't change so I think okay for now
+                     | isReducible b = eval vars (App a (runIdentity $ eval vars b)) --E-APP2
                      | otherwise     = case a of
                                          --previously I increased the free variables in b in this step. However, I don't think this is
                                          --correct since the substitution 'kills' the abstraction.
                                          --(Abst _ x) -> eval vars (sub (a, (increaseFrees b))) --E-APPABS
                                         (Abst _ x) -> eval vars (sub (a, b)) --E-APPABS 
-                                        (Var x) -> App (Var x) (eval vars b)
-                                        _ -> App (eval vars a) (eval vars b)
+                                        (Var x) -> return $ App (Var x) (runIdentity $ eval vars b)
+                                        _ -> return $ App (runIdentity $ eval vars a) (runIdentity $ eval vars b)
 eval vars (IF x y z) | x == TRUE  = eval vars y
                      | x == FALSE = eval vars z
-                     | otherwise  = eval vars (IF (eval vars x) y z)
+                     | otherwise  = eval vars (IF (runEval1 $ eval vars x) y z)
 eval vars x | isVariable x = case performLookup x vars of
                            (Right (Bterm r)) -> eval vars r
-                           _ -> Varc 'Z' --should never get here if argument to eval is first type checked.
-            | otherwise = x
+                           _ ->return $ Varc 'Z' --should never get here if argument to eval is first type checked.
+            | otherwise = return x
 
 isReducible :: T -> Bool
 isReducible (App Abst{} _) = True
@@ -207,10 +218,5 @@ Left "Substitution of wrong type caused by: Uhoh, Variable 'Var 88' not found in
 
 variables = [((Varc 'x'), Bterm (Var 88)),( (Varc 'f'), Bterm (Var 44)),((Varc 'g'), Bterm (Var 34)),((Varc 'p'), Bterm(Var 8))] :: Variables
 
-type Stack = [Int]
 
-init' :: T -> Variables -> State Variables T
-init' term vars = state (\_ -> (term,vars))
 
-test :: State Variables T -> (T,Variables)
-test processor = runState processor []
