@@ -14,4 +14,11 @@ label 3
    menu label CentOS 6.5x86_64 Compute Dom0 (NODEID=0, Tab to Change)
    kernel images/CentOS6.5/x86_64/vmlinuz
    append initrd=images/CentOS6.5/x86_64/initrd.img ks=http://router.ext.armored/kickstart/centos65_dom0.ks repo=http://kickstart.ittc.ku.edu/mirror/centos/6.5/os/x86_64 console=tty0 load_ramdisk=1 ksdevice=eth0 NODEID=0
- 
+label 4
+   menu label Fedora 20 x86_64 (Manual)
+   kernel images/Fedora20/x86_64/vmlinuz
+   append initrd=images/Fedora20/x86_64/initrd.img method=http://kickstart.ittc.ku.edu/mirror/fedora/linux/releases/20/Fedora/x86_64/os/ ksdevice=link console=tty0 load_ramdisk=1 
+label 5
+   menu label Fedora 20 x86_64 (Auto) (NODEID=0, Tab to Change)
+   kernel images/Fedora20/x86_64/vmlinuz
+   append initrd=images/Fedora20/x86_64/initrd.img ks=http://router.ext.armored/kickstart/fedora20.ks repo=http://kickstart.ittc.ku.edu/mirror/fedora/linux/releases/20/Fedora/x86_64/os/ console=tty0 load_ramdisk=1 ksdevice=em1 NODEID=0

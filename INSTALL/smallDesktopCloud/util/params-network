@@ -22,13 +22,14 @@ CLOUD_EXT_ROUTER_DEVICE=p6p1
 # NOTE: CLOUD_EXT_ROUTER_IPADDR and CLOUD_EXT_CONTROL_IPADDR must be the
 #       same if the control node is to run on the router node.
 CLOUD_EXT_ROUTER_IPADDR=10.100.0.254
+CLOUD_DATA_ROUTER_IPADDR=10.0.0.254
 # Value for router node only
 CLOUD_EXT_ROUTER_HOSTNAME=router
 
 # How many compute nodes to setup the router to know about.
 # First address is 10.100.0.1
 # First name is compute1.ext.armored
-CLOUD_NUM_COMPUTE_NODES=1
+CLOUD_NUM_COMPUTE_NODES=8
 
 # ---------------------------------------------
 

@@ -117,7 +117,7 @@ chmod a+x ${GIT_CHANGE_USER}
 chown armored ${GIT_CHANGE_USER}
 
 README_FILE=~armored/README.md
-cat < ${README_FILE} <<EOF
+cat > ${README_FILE} <<EOF
 ARMORED USER
 ============
 The script '${GIT_ARMORED_CODE}' is used to make a clone of the Armored Software
