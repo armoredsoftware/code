@@ -9,7 +9,6 @@ import Data.Binary
 import Data.Time
 import qualified Data.ByteString.Lazy as BSL
 import qualified Data.ByteString as BS
-import Foreign
 
 createPacket:: String -> IO Packet
 createPacket packetType = case packetType of
@@ -33,7 +32,7 @@ createPacket packetType = case packetType of
 
 
 
-prompt:: IO(Ptr LibXenVChan, Bool)
+prompt:: IO(LibXenVChan, Bool)
 prompt = do
           var <- loop
           case var of
