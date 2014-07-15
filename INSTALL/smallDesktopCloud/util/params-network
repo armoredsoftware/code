@@ -4,6 +4,12 @@
 # - The control and networking functions must NOT be on 
 #   the same host.
 ############################################################
+
+# What distribution are we on
+OS_DIST=$(lsb_release -i | cut -f2)
+OS_VERSION=$(lsb_release -r | cut -f2)
+
+
 # Used by router and networking nodes.
 CLOUD_EXT_NETMASK=255.255.255.0
 CLOUD_EXT_DOMAIN=ext.armored
@@ -72,8 +78,19 @@ CLOUD_DATA_NETWORKING_IPADDR=10.0.0.253
 
 # For RHEL we use the ethX devices. For Feorda 19+ we use the
 # pXpY devices.
-#CLOUD_EXT_COMPUTE_DEVICE=em1
-CLOUD_EXT_COMPUTE_DEVICE=eth0
+if [ "x${OS_DIST}" == "xFedora" ] ; then
+  CLOUD_EXT_COMPUTE_DEVICE=em1
+  CLOUD_DATA_COMPUTE_DEVICE=p5p1
+elif [ "x${OS_DIST}" == "xCentOS" ] ; then
+  CLOUD_EXT_COMPUTE_DEVICE=eth0
+  CLOUD_DATA_COMPUTE_DEVICE=eth1
+else
+  echo "#########################"
+  echo "ERROR: Dont know what to do with distribution =${OS_DIST} in script 'params-network'."
+  echo "#########################"
+  exit 1
+fi
+
 CLOUD_EXT_COMPUTE_IPADDR_PREFIX=10.100.0
 # A number will be added to the CLOUD_EXT_COMPUTE_HOSTNAME_PREFIX to
 # get the compute hostname.
@@ -81,6 +98,7 @@ CLOUD_EXT_COMPUTE_HOSTNAME_PREFIX=compute
 
 # For RHEL we use the ethX devices. For Feorda 19+ we use the
 # pXpY devices.
-#CLOUD_DATA_COMPUTE_DEVICE=p5p1
-CLOUD_DATA_COMPUTE_DEVICE=eth1
 CLOUD_DATA_COMPUTE_IPADDR_PREFIX=10.0.0
+
+CLOUD_EXT_COMPUTE_BRIDGE=xenbr0
+CLOUD_DATA_COMPUTE_BRIDGE=xenbr1

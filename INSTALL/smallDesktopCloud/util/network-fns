@@ -173,3 +173,69 @@ get_device_ipaddr () {
 
   ip -f inet address show dev ${CLOUD_DATA_COMPUTE_DEVICE} | grep -e "inet" | sed -e "s/^.*inet //" -e "s/brd.*$//" -e "s/\/[0-9]*//"
 }
+
+
+# For neutron/openvswitch networking we want to move the static address of a physical
+# device to a bridge.
+# Usage: move_ip_from_phy_to_bridge <phyDeivceName> <promisc> <bridgeName>
+# <phyDeviceName> - like 'em1'.
+# <promisc>       - promiscuous mode 'yes' or 'no'.
+# <bridgeName>    - name of the bridge device like 'br-ex'
+move_ip_from_phy_to_bridge () {
+
+  if [ $# -ne 3 ] ; then
+    echo "Need 3 arguments to function ${FUNCNAME[0]}."
+    exit 1
+  fi
+
+  # Config files for the network devices.
+  IFCFG_DEVICE=/etc/sysconfig/network-scripts/ifcfg-$1
+  IFCFG_BRIDGE=/etc/sysconfig/network-scripts/ifcfg-$3
+
+  # Make sure we have not already done the work.
+  if [ -f ${IFCFG_BRIDGE} ] ; then
+    echo "# Bridge file '${IFCFG_BRIDGE}' already exists. Assuming that we don't have to modify it."
+    return
+  fi
+
+  # Make sure that the physical device has a static address.
+  grep -e "^IPADDR" ${IFCFG_DEVICE} > /dev/null
+  if [ $? -ne 0 ] ; then
+    echo "# The config file for device $1 has not been setup to be static."
+    echo "!!!!! Unable to continue with bridge setup."
+    exit 1
+  fi
+
+  touch ${IFCFG_BRIDGE}
+  echo "DEVICE=${3}" >> ${IFCFG_BRIDGE}
+  echo "TYPE=Bridge" >> ${IFCFG_BRIDGE}
+  echo "ONBOOT=no" >> ${IFCFG_BRIDGE}
+  echo "BOOTPROTO=none" >> ${IFCFG_BRIDGE}
+  # get IPADDR, NETMASK and GATEWAY from the physical device config file.
+  EXT_IPADDR=$(grep -e "IPADDR[ ]*=" ${IFCFG_DEVICE} | sed -e "s/^.*=[ ]*//")
+  echo "IPADDR=${EXT_IPADDR}" >> ${IFCFG_BRIDGE}
+  EXT_NETMASK=$(grep -e "NETMASK[ ]*=" ${IFCFG_DEVICE} | sed -e "s/^.*=[ ]*//")
+  echo "NETMASK=${EXT_NETMASK}" >> ${IFCFG_BRIDGE}
+  EXT_GATEWAY=$(grep -e "^[ ]*GATEWAY[ ]*=" ${IFCFG_DEVICE} | sed -e "s/^.*=[ ]*//" )
+  if [ "${EXT_GATEWAY}" != "" ] ; then
+    echo "GATEWAY=${EXT_GATEWAY}" >> ${IFCFG_BRIDGE}
+  fi
+
+  echo "# Modifying file '$1'."
+  # comment out the static IP parameters
+  sed -i -e "/^[ ]*IPADDR[ ]*=/s/^/#/" ${IFCFG_DEVICE}
+  sed -i -e "/^[ ]*NETMASK[ ]*=/s/^/#/" ${IFCFG_DEVICE}
+  sed -i -e "/^[ ]*GATEWAY[ ]*=/s/^/#/" ${IFCFG_DEVICE}
+  sed -i -e "/^[ ]*BOOTPROTO[ ]*=/s/=.*/=none/" ${IFCFG_DEVICE}
+  grep -e "PROMISC[ ]*=" ${IFCFG_DEVICE} > /dev/null
+  if [ "$?" == "0" ] ; then
+    # just change the value and uncomment.
+    sed -i -e "/PROMISC/s/^.*\$/PROMISC=$2/" ${IFCFG_DEVICE}
+  else
+    # add the value
+    sed -i -e "\$ a\
+PROMISC=$2" ${IFCFG_DEVICE}
+  fi
+
+}
+
