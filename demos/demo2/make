@@ -1,0 +1,4 @@
+#!/bin/bash
+  ghc Appraiser.hs 
+  ghc Attestation.hs
+  ./scp.sh
