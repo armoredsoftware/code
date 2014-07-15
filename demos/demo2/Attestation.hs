@@ -123,7 +123,7 @@ mkResponse (desiredE, desiredPCRs, nonce) = do
   chan <- client_init measurerID
   eList <- mapM (getEvidencePiece chan) desiredE
   let evPack = signEvidence eList nonce
-      quote = mkSignedQuote desiredPCRs nonce
+      quote = mkSignedTPMQuote desiredPCRs nonce
       hash = doHash eList nonce
       quoPack = signQuote quote hash
         
@@ -140,17 +140,23 @@ signQuote :: Quote -> Hash -> QuotePackage
 signQuote q@((pcrsIn, nonce), sig) hash = case sign Nothing md5 pri res of
          Left err -> throw . ErrorCall $ show err
          Right signature -> (q, hash, signature) 
- where res =  (pack' (pcrsIn, nonce)) `append` sig `append` hash
+ where res =  qPack q hash
 --type Quote = (([PCR], Nonce), Signature)--simulates TPM   
   
+qPack :: Quote -> Hash -> ByteString
+qPack q@((pcrsIn, nonce), sig) hash = 
+  (pack' (pcrsIn, nonce)) `append` sig `append` hash
   
+
 signEvidence :: Evidence -> Nonce -> EvidencePackage
 signEvidence e n = case sign Nothing md5 pri res of
          Left err -> throw . ErrorCall $ show err
          Right signature -> (e, n, signature) 
          
-   where res = (B.concat e) `append` n
+   where res = ePack e n
 
+ePack :: Evidence -> Nonce -> ByteString
+ePack e n = (B.concat e) `append` n
 
 getEvidencePiece :: LibXenVChan -> EvidenceDescriptor -> IO EvidencePiece
 getEvidencePiece chan ed = do
@@ -178,8 +184,8 @@ sendResponse chan resp = do
   send chan $ Attestation resp
   return () 
 
-mkSignedQuote :: TPMRequest -> Nonce -> Quote
-mkSignedQuote mask nonce =
+mkSignedTPMQuote :: TPMRequest -> Nonce -> Quote
+mkSignedTPMQuote mask nonce =
     let pcrs' = pcrSelect mask
         quote = (pcrs', nonce) in
       case sign Nothing md5 pri $ pack' quote of
