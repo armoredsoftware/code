@@ -41,7 +41,6 @@ reboot
 
 %packages
 @core
-redhat-lsb-core
 git
 
 %end
@@ -80,6 +79,7 @@ echo "network --onboot=yes --bootproto=dhcp --hostname=compute${NODEID}.@CLOUD_E
 
 # Get most recent RPM updates.
 yum -y update
+yum -y redhat-lsb-core
 
 # Add the armored user.
 groupadd --gid 9100 armored
