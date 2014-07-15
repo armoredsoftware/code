@@ -4,7 +4,6 @@
 import VChanUtil
 import Data.Time
 import qualified Data.ByteString as BS
-import Foreign
 
 
 main = do logger <- createLogger
@@ -25,8 +24,8 @@ main = do logger <- createLogger
           
 -- #########################################################################
 
-run_getter :: Ptr VChanUtil.XenToolLogger -> Word64 -> Word64 ->
-              UTCTime -> Ptr VChanUtil.LibXenVChan-> IO ()
+--run_getter :: VChanUtil.XenToolLogger -> Word64 -> Word64 ->
+--              UTCTime -> VChanUtil.LibXenVChan-> IO ()
 run_getter logger !total !x !start_t !c
   | x >= print_amt = do print_speed start_t total
                         run_getter logger total 0 start_t c
@@ -42,7 +41,7 @@ run_getter logger !total !x !start_t !c
 
 -- #########################################################################
 
-print_speed :: UTCTime -> Word64 -> IO ()
+--print_speed :: UTCTime -> Word64 -> IO ()
 print_speed start numBytes = do
   now <- getCurrentTime
   let !diff     = diffUTCTime now start
