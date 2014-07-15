@@ -8,19 +8,21 @@ import Crypto.Random
 import Crypto.PubKey.HashDescr
 import Crypto.PubKey.RSA
 import Crypto.PubKey.RSA.PKCS15
+import Crypto.Hash.MD5(hash)
 
 -- utility libraries
 import Control.Exception hiding (evaluate)
 import Control.Monad
 import Data.Bits
-import Data.ByteString (ByteString, pack, append)
+import Data.ByteString (ByteString, pack, append, empty)
+import qualified Data.ByteString as B
 import Data.Word
 import System.IO
 import System.IO.Unsafe (unsafePerformIO)
 import Data.Binary
 
 data Shared = Appraisal Request
-              | Attestation Quote
+              | Attestation Response
               | Result Bool
 
 
@@ -29,15 +31,7 @@ instance Show Shared where
     show (Attestation att) = "Attestation: " ++ (show att)
     show (Result True) = "Appraisal succeeded."
     show (Result False) = "Appraisal failed."
-
--- Primitive types
-type PCR = Word8
-type Mask = Word8
-type Nonce = ByteString
-type Signature = ByteString
-type Request = (Mask, Nonce)
-type Quote = (([PCR], Nonce), Signature)
-
+    
 instance Binary Shared where
   put (Appraisal req)              = do put (0::Word8)
                                         put req
@@ -54,6 +48,113 @@ instance Binary Shared where
                      return (Attestation quote)
              2 -> do res <- get
                      return (Result res)
+
+
+-- Primitive types
+type PCR = Word8
+type Mask = Word8
+type Nonce = ByteString
+type Signature = ByteString
+--type Request = (Mask, Nonce)
+type TPMRequest = Word8 --(Mask, Nonce)
+type Quote = (([PCR], Nonce), Signature)--simulates TPM 
+
+--Request
+type Request = (DesiredEvidence, TPMRequest, Nonce)
+type DesiredEvidence = [EvidenceDescriptor]
+data EvidenceDescriptor = D0 | D1 | D2  --for now
+
+instance Binary EvidenceDescriptor where
+  put D0 = do put (0::Word8)
+  put D1 = do put (1::Word8)
+  put D2 = do put (2::Word8)
+           
+  get = do t<- get :: Get Word8
+           case t of
+               0 -> return D0
+               1 -> return D1
+               2 -> return D2
+                    
+
+instance Show EvidenceDescriptor where
+  show D0 = "Evidence Piece #0"
+  show D1 = "Evidence Piece #1"
+  show D2 = "Evidence Piece #2"
+   
+
+--Response
+type Response = (EvidencePackage, QuotePackage)
+type EvidencePackage = (Evidence, Nonce, Signature)
+type QuotePackage = (Quote, Hash, Signature)
+
+mkResponse :: Request -> IO Response
+mkResponse (desiredE, desiredPCRs, nonce) = do
+  measurerID <- measurePrompt
+  chan <- client_init measurerID
+  eList <- mapM (getEvidencePiece chan) desiredE
+  let evPack = signEvidence eList nonce
+      quote = mkSignedQuote desiredPCRs nonce
+      hash = doHash eList nonce
+      quoPack = signQuote quote hash
+        
+  return (evPack, quoPack) {-where
+  ep = ([empty], empty, empty)
+  qp = ((([bit 0], empty), empty), empty, empty) -}
+
+
+doHash :: Evidence -> Nonce -> ByteString
+doHash e n = let res = (B.concat e) `append` n in
+  hash res
+
+signQuote :: Quote -> Hash -> QuotePackage
+signQuote q@((pcrsIn, nonce), sig) hash = case sign Nothing md5 pri res of
+         Left err -> throw . ErrorCall $ show err
+         Right signature -> (q, hash, signature) 
+ where res =  (pack' (pcrsIn, nonce)) `append` sig `append` hash
+--type Quote = (([PCR], Nonce), Signature)--simulates TPM   
+  
+  
+signEvidence :: Evidence -> Nonce -> EvidencePackage
+signEvidence e n = case sign Nothing md5 pri res of
+         Left err -> throw . ErrorCall $ show err
+         Right signature -> (e, n, signature) 
+         
+   where res = (B.concat e) `append` n
+
+
+
+type Hash = ByteString
+type Evidence = [EvidencePiece]
+type EvidencePiece = ByteString --for now 
+
+--Measurement
+type MeasurementRequest = (EvidenceDescriptor, Nonce)
+type MeasurementResponse = (EvidencePiece, Nonce)
+
+
+measurePrompt :: IO (Int)
+measurePrompt = loop
+      where loop = do putStrLn "Which Domain ID is the Measurer?"
+                      input <- getLine
+                      case reads input of
+                        [(id,_)] -> return id
+                        _     -> do putStrLn "Error: Please Enter a Number."
+                                    loop
+
+
+getEvidencePiece :: LibXenVChan -> EvidenceDescriptor -> IO EvidencePiece
+getEvidencePiece chan ed = do
+  putStrLn $ "\n" ++ "Attestation Agent Sending: " ++ (show ed)
+  send chan $ ed
+  ctrlWait chan
+  evidence :: EvidencePiece <- receive chan --TODO:  error handling
+  putStrLn $ "Received: " ++ (show evidence)
+  return evidence
+  
+
+
+
+
 
 
 getKeys :: (PrivateKey, PublicKey)
@@ -98,20 +199,20 @@ receiveRequest chan = do
       return req
     otherwise -> throw $ ErrorCall requestReceiveError
       
-sendQuote :: LibXenVChan -> Quote -> IO ()   
-sendQuote chan quote = do
-  putStrLn $ "Attester Sending: " ++ (show $ Attestation quote) ++ "\n"
-  send chan $ Attestation quote
-  return ()
+sendResponse :: LibXenVChan -> Response-> IO ()   
+sendResponse chan resp = do
+  putStrLn $ "Attester Sending: " ++ (show $ Attestation resp) ++ "\n"
+  send chan $ Attestation resp
+  return () 
 
 
-mkSignedQuote :: Request -> Quote
-mkSignedQuote (mask, nonce) =
+mkSignedQuote :: TPMRequest -> Nonce -> Quote
+mkSignedQuote mask nonce =
     let pcrs' = pcrSelect mask
         quote = (pcrs', nonce) in
       case sign Nothing md5 pri $ pack' quote of
          Left err -> throw . ErrorCall $ show err
-         Right signature -> (quote, signature)
+         Right signature -> (quote, signature) 
                  
 
                   
@@ -130,7 +231,7 @@ pack' (pcrs, nonce) = pack pcrs `append` nonce
 
 pcrSelect :: Mask -> [PCR]
 pcrSelect mask = 
-    [ x | (x, n) <- zip pcrs [0..7], testBit mask n]
+    [ x | (x, n) <- zip pcrs [0..7], testBit mask n] 
 
 -- Crypto primitives
 md5 :: HashDescr
@@ -143,12 +244,14 @@ pri :: PrivateKey
 --gen' :: SystemRNG
 --((pub, pri), gen') = generate gen 255 3
 
+
+
 main = do
   appraiserID <- prompt
   chan <- server_init appraiserID
   req <- receiveRequest chan
-  let sq = mkSignedQuote req
-  sendQuote chan sq
+  resp <- mkResponse req
+  sendResponse chan resp
   return ()
   
   
