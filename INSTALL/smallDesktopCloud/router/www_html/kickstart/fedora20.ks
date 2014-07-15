@@ -41,6 +41,7 @@ reboot
 
 %packages
 @core
+redhat-lsb-core
 git
 
 %end
