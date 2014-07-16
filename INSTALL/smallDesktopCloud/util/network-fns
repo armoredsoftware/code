@@ -174,6 +174,29 @@ get_device_ipaddr () {
   ip -f inet address show dev ${CLOUD_DATA_COMPUTE_DEVICE} | grep -e "inet" | sed -e "s/^.*inet //" -e "s/brd.*$//" -e "s/\/[0-9]*//"
 }
 
+# In the named file find the line with the name and replace the value
+# If the name does not exist then append to the end of the file.
+# If the name= is found but commented out then uncomment and then change value.
+# Usage: file_name_equal_val_replace_or_add <fileName> <name> <value>
+file_name_equal_val_replace_or_add () {
+
+  if [ $# -ne 3 ] ; then
+    echo "Need 3 arguments to function ${FUNCNAME[0]}."
+    exit 1
+  fi
+
+  # First search for commented out name= and remove comment.
+  sed -i -e "/^[ #]*${2}[ ]*=/s/^[ #]*//" $1
+
+  THE_NAME_VALUE=$(grep -e "^[ ]*$2[ ]*=" $1)
+  if [ "x${THE_NAME_VALUE}" != "x" ] ; then
+    sed -i -e "s/^[ ]*$2[ ]*=.*\$/$2=$3/" $1
+  else 
+    # add the value
+    sed -i -e "\$ a\
+$2=$3" $1
+  fi
+}
 
 # For neutron/openvswitch networking we want to move the static address of a physical
 # device to a bridge.
@@ -207,35 +230,61 @@ move_ip_from_phy_to_bridge () {
   fi
 
   touch ${IFCFG_BRIDGE}
-  echo "DEVICE=${3}" >> ${IFCFG_BRIDGE}
-  echo "TYPE=Bridge" >> ${IFCFG_BRIDGE}
-  echo "ONBOOT=no" >> ${IFCFG_BRIDGE}
-  echo "BOOTPROTO=none" >> ${IFCFG_BRIDGE}
+  file_name_equal_val_replace_or_add ${IFCFG_BRIDGE} "DEVICE" "$3"
+  file_name_equal_val_replace_or_add ${IFCFG_BRIDGE} "TYPE" "OVSBridge"
+  file_name_equal_val_replace_or_add ${IFCFG_BRIDGE} "DEVICETYPE" "OVSBridge"
+  file_name_equal_val_replace_or_add ${IFCFG_BRIDGE} "ONBOOT" "yes"
+  file_name_equal_val_replace_or_add ${IFCFG_BRIDGE} "BOOTPROTO" "static"
+
   # get IPADDR, NETMASK and GATEWAY from the physical device config file.
-  EXT_IPADDR=$(grep -e "IPADDR[ ]*=" ${IFCFG_DEVICE} | sed -e "s/^.*=[ ]*//")
-  echo "IPADDR=${EXT_IPADDR}" >> ${IFCFG_BRIDGE}
-  EXT_NETMASK=$(grep -e "NETMASK[ ]*=" ${IFCFG_DEVICE} | sed -e "s/^.*=[ ]*//")
-  echo "NETMASK=${EXT_NETMASK}" >> ${IFCFG_BRIDGE}
-  EXT_GATEWAY=$(grep -e "^[ ]*GATEWAY[ ]*=" ${IFCFG_DEVICE} | sed -e "s/^.*=[ ]*//" )
-  if [ "${EXT_GATEWAY}" != "" ] ; then
-    echo "GATEWAY=${EXT_GATEWAY}" >> ${IFCFG_BRIDGE}
+  EXT_IPADDR=$(grep -e "^[ #]*IPADDR[ ]*=" ${IFCFG_DEVICE} | sed -e "s/^.*=[ ]*//")
+  file_name_equal_val_replace_or_add ${IFCFG_BRIDGE} "IPADDR" "${EXT_IPADDR}"
+
+  EXT_NETMASK=$(grep -e "^[ #]*NETMASK[ ]*=" ${IFCFG_DEVICE} | sed -e "s/^.*=[ ]*//")
+  file_name_equal_val_replace_or_add ${IFCFG_BRIDGE} "NETMASK" "${EXT_NETMASK}"
+
+  EXT_GATEWAY=$(grep -e "^[ #]*GATEWAY[ ]*=" ${IFCFG_DEVICE} | sed -e "s/^.*=[ ]*//" )
+  if [ "x${EXT_GATEWAY}" != "x" ] ; then
+      file_name_equal_val_replace_or_add ${IFCFG_BRIDGE} "GATEWAY" "${EXT_GATEWAY}"
   fi
+
+  EXT_IPV6INIT=$(grep -e "^[ #]*IPV6INIT[ ]*=" ${IFCFG_DEVICE} | sed -e "s/^.*=[ ]*//" )
+  if [ "x${EXT_IPV6INIT}" != "x" ] ; then
+      file_name_equal_val_replace_or_add ${IFCFG_BRIDGE} "IPV6INIT" "${EXT_IPV6INIT}"
+  fi
+
+  EXT_DEFROUTE=$(grep -e "^[ #]*DEFROUTE[ ]*=" ${IFCFG_DEVICE} | sed -e "s/^.*=[ ]*//" )
+  if [ "x${EXT_DEFROUTE}" != "x" ] ; then
+      file_name_equal_val_replace_or_add ${IFCFG_BRIDGE} "DEFROUTE" "${EXT_DEFROUTE}"
+  fi
+
+  EXT_IPV4_FAILURE_FATAL=$(grep -e "^[ #]*IPV4_FAILURE_FATAL[ ]*=" ${IFCFG_DEVICE} | sed -e "s/^.*=[ ]*//" )
+  if [ "x${EXT_IPV4_FAILURE_FATAL}" != "x" ] ; then
+      file_name_equal_val_replace_or_add ${IFCFG_BRIDGE} "IPV4_FAILURE_FATAL" "${EXT_IPV4_FAILURE_FATAL}"
+  fi
+
+
+  file_name_equal_val_replace_or_add ${IFCFG_BRIDGE} "NM_CONTROLLED" "NO"
+
+  
 
   echo "# Modifying file '$1'."
   # comment out the static IP parameters
   sed -i -e "/^[ ]*IPADDR[ ]*=/s/^/#/" ${IFCFG_DEVICE}
   sed -i -e "/^[ ]*NETMASK[ ]*=/s/^/#/" ${IFCFG_DEVICE}
   sed -i -e "/^[ ]*GATEWAY[ ]*=/s/^/#/" ${IFCFG_DEVICE}
-  sed -i -e "/^[ ]*BOOTPROTO[ ]*=/s/=.*/=none/" ${IFCFG_DEVICE}
-  grep -e "PROMISC[ ]*=" ${IFCFG_DEVICE} > /dev/null
-  if [ "$?" == "0" ] ; then
-    # just change the value and uncomment.
-    sed -i -e "/PROMISC/s/^.*\$/PROMISC=$2/" ${IFCFG_DEVICE}
-  else
-    # add the value
-    sed -i -e "\$ a\
-PROMISC=$2" ${IFCFG_DEVICE}
-  fi
+  sed -i -e "/^[ ]*IPV6INIT[ ]*=/s/^/#/" ${IFCFG_DEVICE}
+  sed -i -e "/^[ ]*DEFROUTE[ ]*=/s/^/#/" ${IFCFG_DEVICE}
+  sed -i -e "/^[ ]*IPV4_FAILURE_FATAL[ ]*=/s/^/#/" ${IFCFG_DEVICE}
+
+  file_name_equal_val_replace_or_add ${IFCFG_DEVICE} "BOOTPROTO" "none"
+  file_name_equal_val_replace_or_add ${IFCFG_DEVICE} "ONBOOT" "yes"
+  file_name_equal_val_replace_or_add ${IFCFG_DEVICE} "TYPE" "OVSPort"
+  file_name_equal_val_replace_or_add ${IFCFG_DEVICE} "DEVICETYPE" "ovs"
+  file_name_equal_val_replace_or_add ${IFCFG_DEVICE} "OVS_BRIDGE" "$3"
+  file_name_equal_val_replace_or_add ${IFCFG_DEVICE} "PROMISC" "$2"
+  file_name_equal_val_replace_or_add ${IFCFG_DEVICE} "NM_CONTROLLED" "no"
+
 
 }
 
