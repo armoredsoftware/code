@@ -1,5 +1,6 @@
 #!/bin/bash
   ghc Client.hs ../common/common.c -L/usr/lib64 -lxenvchan -lxenctrl
   ghc Mgr.hs ../common/common.c -L/usr/lib64 -lxenvchan -lxenctrl
-  ghc SpeedTest_DomU.hs ../common/common.c -L/usr/lib64 -lxenvchan -lxenctrl
-  ghc SpeedTest_Dom0.hs ../common/common.c -L/usr/lib64 -lxenvchan -lxenctrl
+  ghc SpeedTest_DomU.hs
+  ghc SpeedTest_Dom0.hs 
+./scp.sh

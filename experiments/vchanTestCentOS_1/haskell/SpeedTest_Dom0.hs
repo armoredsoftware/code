@@ -26,7 +26,7 @@ createPacket packetType = case packetType of
                                        in return (AttestationRequest src dest msg)
 
 
-dataBlob = BSL.take 4200 $ BSL.pack byteList
+dataBlob = BSL.take 9999999 $ BSL.pack byteList
   where byteList = [0..]++byteList
 
 speedTest logger ctrl= forever $ do
@@ -58,7 +58,7 @@ main = do logger <- createLogger
                         size <- dataReady ctrlMgr
                         if size > 0 then
                           do response ::Packet <- checkMessage logger ctrlMgr size 
-                             putStrLn ("Received from 1: "++ (show response))
+                             putStrLn ("Dom0: Received from 1: "++ (show response))
                              loop
                         else
                           loop

@@ -8,7 +8,7 @@ import qualified Data.ByteString as BS
 
 main = do logger <- createLogger
           id <- getDomId
-          putStrLn ("My Dom Id: "++show id)         
+          putStrLn ("DomU: My Dom Id: "++show id)         
           ctrlMgr <- server_init id
 
           loop ctrlMgr
@@ -18,7 +18,7 @@ main = do logger <- createLogger
           destroyLogger logger
             where loop=(\chan -> do size<- dataReady chan
                                     if size > 0 then
-                                      putStrLn "Got first element"
+                                      putStrLn "DomU: Got first element"
                                     else
                                        loop chan)
           
@@ -48,7 +48,7 @@ print_speed start numBytes = do
       !diff_rat = toRational diff :: Rational
       !diff_dbl = fromRational diff_rat :: Float
       !amnt_dbl = fromIntegral numBytes :: Float
-  putStrLn $ "Read " ++ show numBytes ++ " in " ++ (show diff)
+  putStrLn $ "DomU: Read " ++ show numBytes ++ " in " ++ (show diff)
   putStrLn $ "   " ++ showSpeed (amnt_dbl / diff_dbl) ++ "\n"
  where
   showSpeed x 
