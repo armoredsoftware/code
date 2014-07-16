@@ -79,6 +79,7 @@ echo "network --onboot=yes --bootproto=dhcp --hostname=compute${NODEID}.@CLOUD_E
 
 # Get most recent RPM updates.
 yum -y update
+yum -y redhat-lsb-core
 
 # Add the armored user.
 groupadd --gid 9100 armored
@@ -114,7 +115,7 @@ if [ ! \$# -eq 1 ] ; then
   exit 1
 fi
 git remote set-url origin https://\${1}@github.com/armoredsoftware/code.git
-git config user.name "\${1}"
+git config --global user.name "\${1}"
 EOF
 
 chmod a+x ${GIT_CHANGE_USER}
