@@ -193,8 +193,7 @@ file_name_equal_val_replace_or_add () {
     sed -i -e "s/^[ ]*$2[ ]*=.*\$/$2=$3/" $1
   else 
     # add the value
-    sed -i -e "\$ a\
-$2=$3" $1
+    echo "$2=$3" >> $1
   fi
 }
 
@@ -229,7 +228,9 @@ move_ip_from_phy_to_bridge () {
     exit 1
   fi
 
+  echo "# Modifying config file of network device '$3'."
   touch ${IFCFG_BRIDGE}
+  echo "# OpenVSwitch bridge" >> ${IFCFG_BRIDGE}
   file_name_equal_val_replace_or_add ${IFCFG_BRIDGE} "DEVICE" "$3"
   file_name_equal_val_replace_or_add ${IFCFG_BRIDGE} "TYPE" "OVSBridge"
   file_name_equal_val_replace_or_add ${IFCFG_BRIDGE} "DEVICETYPE" "OVSBridge"
@@ -268,7 +269,7 @@ move_ip_from_phy_to_bridge () {
 
   
 
-  echo "# Modifying file '$1'."
+  echo "# Modifying config file of network device '$1'."
   # comment out the static IP parameters
   sed -i -e "/^[ ]*IPADDR[ ]*=/s/^/#/" ${IFCFG_DEVICE}
   sed -i -e "/^[ ]*NETMASK[ ]*=/s/^/#/" ${IFCFG_DEVICE}
