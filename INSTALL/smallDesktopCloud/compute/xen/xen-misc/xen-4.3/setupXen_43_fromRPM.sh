@@ -23,7 +23,7 @@ yum -y install openvswitch
 
 # Create bridge config files and modify static network device config
 move_ip_from_phy_to_bridge ${CLOUD_EXT_COMPUTE_DEVICE} yes ${CLOUD_EXT_COMPUTE_BRIDGE}
-move_ip_from_phy_to_bridge ${CLOUD_DATA_COMPUTE_DEVICE} yes ${CLOUD_DATA_COMPUTE_BRIDGE}
+move_ip_from_phy_to_bridge ${CLOUD_DATA_COMPUTE_DEVICE} no ${CLOUD_DATA_COMPUTE_BRIDGE}
 
 # Setup the openvswitch
 # Since Openstack uses openvswitch we might as well get used to it.
@@ -31,11 +31,17 @@ systemctl enable openvswitch.service
 systemctl start openvswitch.service
 
 
-ovs-vsctl add-br ${CLOUD_EXT_COMPUTE_BRIDGE}
-ovs-vsctl add-port ${CLOUD_EXT_COMPUTE_BRIDGE} ${CLOUD_EXT_COMPUTE_DEVICE}
+#ovs-vsctl add-br ${CLOUD_EXT_COMPUTE_BRIDGE}
+#ovs-vsctl add-port ${CLOUD_EXT_COMPUTE_BRIDGE} ${CLOUD_EXT_COMPUTE_DEVICE}
 
-ovs-vsctl add-br ${CLOUD_DATA_COMPUTE_BRIDGE}
-ovs-vsctl add-port ${CLOUD_DATA_COMPUTE_BRIDGE} ${CLOUD_DATA_COMPUTE_DEVICE}
+#ovs-vsctl add-br ${CLOUD_DATA_COMPUTE_BRIDGE}
+#ovs-vsctl add-port ${CLOUD_DATA_COMPUTE_BRIDGE} ${CLOUD_DATA_COMPUTE_DEVICE}
+
+
+exit 0
+
+systemctl restart network.service
+
 
 # Enable the xen domain services.
 systemctl enable xendomains.service

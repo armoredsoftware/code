@@ -5,6 +5,14 @@
 #   the same host.
 ############################################################
 
+# We need the lsb_release utility
+
+rpm -q redhat-lsb-core >> /dev/null
+if [ $? -ne 0 ] ; then
+  yum -y install redhat-lsb-core
+fi
+
+
 # What distribution are we on
 OS_DIST=$(lsb_release -i | cut -f2)
 OS_VERSION=$(lsb_release -r | cut -f2)
