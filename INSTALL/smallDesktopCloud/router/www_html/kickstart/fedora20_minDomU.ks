@@ -23,7 +23,7 @@ bootloader --location=mbr --driveorder=xvda --append="crashkernel=auto console=h
 # not guaranteed to work
 # The zerombr is needed since we usually start with an unitialized 
 # disk image file.
-zerombr yes
+zerombr
 clearpart --all --drives=xvda
 part pv.202002 --grow --size=1
 part /boot --fstype=ext4 --size=500
