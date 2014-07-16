@@ -34,6 +34,13 @@ yum -y install iptables-services
 move_ip_from_phy_to_bridge ${CLOUD_EXT_COMPUTE_DEVICE} yes ${CLOUD_EXT_COMPUTE_BRIDGE}
 move_ip_from_phy_to_bridge ${CLOUD_DATA_COMPUTE_DEVICE} no ${CLOUD_DATA_COMPUTE_BRIDGE}
 
+# We need to let xl.conf know that we are using the openvswitch bridge instead of default unix bridge.
+sed -i -s "/^[ #]*vif.default.script[ ]*=/s/^.*$/vif.default.script=\"vif-openvswitch\"/" /etc/xen/xl.conf
+
+# Just in case we change the default bridge from xenbr0
+sed -i -s "/^[ #]*vif.default.bridge[ ]*=/s/^.*$/vif.default.bridge=\"${CLOUD_EXT_COMPUTE_BRIDGE}\"/" /etc/xen/xl.conf
+
+
 # setup some networking needed by xen-4.3
 cp ./xen-4.3-network.conf /etc/sysctl.d
 # Make it happen now.
@@ -41,6 +48,7 @@ sysctl -p /etc/sysctl.d/xen-4.3-network.conf
 
 # Setup NAT.
 iptables -t nat -A POSTROUTING -o ${CLOUD_EXT_COMPUTE_DEVICE} -j MASQUERADE
+
 # Put the iptables on the persitance place
 iptables-save > /etc/sysconfig/iptables
 
