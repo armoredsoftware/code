@@ -14,8 +14,8 @@ keyboard --vckeymap=us --xlayouts='us'
 # System language
 lang en_US.UTF-8
 
-services --disabled=NetworkManager,firstboot
-services --enabled=network,ntpdate,ntpd
+services --disabled=NetworkManager,firstboot,firewalld
+services --enabled=network,ntpdate,ntpd,iptables
 
 # Network information
 
