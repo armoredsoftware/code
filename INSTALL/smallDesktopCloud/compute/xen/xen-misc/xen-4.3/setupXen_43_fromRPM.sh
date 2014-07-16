@@ -22,25 +22,38 @@ yum -y install xen-devel
 yum -y install openvswitch
 
 # Create bridge config files and modify static network device config
+# Note that this network device config setup makes it so that we do not have
+# do do the following type of setup from the command line.:
+# ovs-vsctl add-br xenbr0
+# ovs-vsctl add-port xenbr0 eth0
 move_ip_from_phy_to_bridge ${CLOUD_EXT_COMPUTE_DEVICE} yes ${CLOUD_EXT_COMPUTE_BRIDGE}
 move_ip_from_phy_to_bridge ${CLOUD_DATA_COMPUTE_DEVICE} no ${CLOUD_DATA_COMPUTE_BRIDGE}
+
+# setup some networking needed by xen-4.3
+cp ./xen-4.3-network.conf /etc/sysctl.d
+# Make it happen now.
+sysctl -p /etc/sysctl.d/xen-4.3-network.conf
+
+# Setup NAT.
+iptables -t nat -A POSTROUTING -o ${CLOUD_EXT_COMPUTE_DEVICE} -j MASQUERADE
+# Put the iptables on the persitance place
+iptables-save > /etc/sysconfig/iptables
+
+#firewall-cmd --permanent --zone=external --add-masquerade
+#firewall-cmd --permanent --zone=external --change-interface=${CLOUD_EXT_COMPUTE_DEVICE}
+#firewall-cmd --permanent --zone=internal --change-interface=${CLOUD_EXT_COMPUTE_BRIDGE}
+#firewall-cmd --permanent --zone=external --change-interface=${CLOUD_DATA_COMPUTE_DEVICE}
+#firewall-cmd --permanent --zone=internal --change-interface=${CLOUD_DATA_COMPUTE_BRIDGE}
+
 
 # Setup the openvswitch
 # Since Openstack uses openvswitch we might as well get used to it.
 systemctl enable openvswitch.service
 systemctl start openvswitch.service
 
-
-#ovs-vsctl add-br ${CLOUD_EXT_COMPUTE_BRIDGE}
-#ovs-vsctl add-port ${CLOUD_EXT_COMPUTE_BRIDGE} ${CLOUD_EXT_COMPUTE_DEVICE}
-
-#ovs-vsctl add-br ${CLOUD_DATA_COMPUTE_BRIDGE}
-#ovs-vsctl add-port ${CLOUD_DATA_COMPUTE_BRIDGE} ${CLOUD_DATA_COMPUTE_DEVICE}
-
-
-exit 0
-
 systemctl restart network.service
+
+# setup some xen configuration.
 
 
 # Enable the xen domain services.
