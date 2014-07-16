@@ -233,7 +233,7 @@ move_ip_from_phy_to_bridge () {
   echo "# OpenVSwitch bridge" >> ${IFCFG_BRIDGE}
   file_name_equal_val_replace_or_add ${IFCFG_BRIDGE} "DEVICE" "$3"
   file_name_equal_val_replace_or_add ${IFCFG_BRIDGE} "TYPE" "OVSBridge"
-  file_name_equal_val_replace_or_add ${IFCFG_BRIDGE} "DEVICETYPE" "OVSBridge"
+  file_name_equal_val_replace_or_add ${IFCFG_BRIDGE} "DEVICETYPE" "ovs"
   file_name_equal_val_replace_or_add ${IFCFG_BRIDGE} "ONBOOT" "yes"
   file_name_equal_val_replace_or_add ${IFCFG_BRIDGE} "BOOTPROTO" "static"
 
@@ -265,7 +265,7 @@ move_ip_from_phy_to_bridge () {
   fi
 
 
-  file_name_equal_val_replace_or_add ${IFCFG_BRIDGE} "NM_CONTROLLED" "NO"
+  file_name_equal_val_replace_or_add ${IFCFG_BRIDGE} "NM_CONTROLLED" "no"
 
   
 
@@ -277,6 +277,7 @@ move_ip_from_phy_to_bridge () {
   sed -i -e "/^[ ]*IPV6INIT[ ]*=/s/^/#/" ${IFCFG_DEVICE}
   sed -i -e "/^[ ]*DEFROUTE[ ]*=/s/^/#/" ${IFCFG_DEVICE}
   sed -i -e "/^[ ]*IPV4_FAILURE_FATAL[ ]*=/s/^/#/" ${IFCFG_DEVICE}
+  sed -i -e "/^[ ]*DNS[0-9*[ ]*=/s/^/#/" ${IFCFG_DEVICE}
 
   file_name_equal_val_replace_or_add ${IFCFG_DEVICE} "BOOTPROTO" "none"
   file_name_equal_val_replace_or_add ${IFCFG_DEVICE} "ONBOOT" "yes"
