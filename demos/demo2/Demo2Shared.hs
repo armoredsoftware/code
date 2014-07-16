@@ -84,9 +84,9 @@ instance Binary EvidenceDescriptor where
                     
 
 instance Show EvidenceDescriptor where
-  show D0 = "Evidence Piece #0"
-  show D1 = "Evidence Piece #1"
-  show D2 = "Evidence Piece #2"
+  show D0 = "Measurement #0"
+  show D1 = "Measurement #1"
+  show D2 = "Measurement #2"
    
 
 --Response

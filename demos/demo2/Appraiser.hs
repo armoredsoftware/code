@@ -42,8 +42,8 @@ main = let (mask, nonce) = mkTPMRequest [0..7]
            req = ([D0, D1, D2], mask, nonce) in
   do chan <- sendRequest req
      response <- receiveResponse chan
-     --case evaluate req response of True -> putStrLn "Appraisal Succeeded"
-     return ()
+     let result = evaluate req response in 
+       showDemo2EvalResult result
 
                       
 
@@ -96,9 +96,24 @@ evaluate (mask, rnonce) (quote@(qpcrs, qnonce), signature) =
 --type Response = (EvidencePackage, QuotePackage)
 
 
+showDemo2EvalResult :: Demo2EvalResult -> IO ()
+showDemo2EvalResult (r1, r2, r3, r4, r5, ms) = do
+     putStrLn $ e1 ++ show r1
+     putStrLn $ e2 ++ show r2
+     putStrLn $ e3 ++ show r3
+     putStrLn $ e4 ++ show r4
+     putStrLn $ e5 ++ show r5
+     mapM_ f ms 
+     
+     
+     
+  where f :: MeasureEval -> IO ()
+        f (d, b) = putStrLn $ show d ++ ": " ++ show b
+  
+
+
 type MeasureEval = (EvidenceDescriptor, Bool)
 type Demo2EvalResult = (Bool, Bool, Bool, Bool, Bool, [MeasureEval])
-
 
 evaluate :: Request -> Response -> Demo2EvalResult
 evaluate (d, tReq, nonce) 
@@ -112,8 +127,8 @@ evaluate (d, tReq, nonce)
       r3 = verify md5 pub tpmBlob qSig 
       r4 = ((doHash eBlob) == hashIn)
       r5 = (nonce == eNonce)
-      me =  evaluateEvidence d e in
- (r1, r2, r3, r4, r5, me)
+      ms =  evaluateEvidence d e in
+ (r1, r2, r3, r4, r5, ms)
   
                                             
 evaluateEvidence :: DesiredEvidence -> Evidence -> [MeasureEval]
@@ -150,19 +165,19 @@ expectedEvidence = [M0 empty, M1 empty, M2 empty]
 goldenMap = M.fromList $ zip [0..2] expectedEvidence
                                              
 e1 :: String
-e1 = "Quote Package Signature could not be verified."
+e1 = "Quote Package Signature: "
         
 e2 :: String
-e2 = "Evidence Package Signature could not be verified."  
+e2 = "Evidence Package Signature: "  
 
 e3 :: String
-e3 = "TPM Signature could not be verified."  
+e3 = "TPM Signature: "  
 
 e4 :: String
-e4 = "Hash inequality suggests evidence content has been altered."  
+e4 = "Integrity of evidence package: "  
 
 e5 :: String
-e5 = "Nonce could not be verified."
+e5 = "Nonce verified: "
 
 e6 :: String
 e6 = "Measurement #"
