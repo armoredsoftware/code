@@ -16,6 +16,7 @@ data Shared = Appraisal Request
               | Result Bool
 
 
+
 instance Show Shared where
     show (Appraisal app) = "Appraisal: " ++ (show app)
     show (Attestation att) = "Attestation: " ++ (show att)
@@ -39,6 +40,25 @@ instance Binary Shared where
              2 -> do res <- get
                      return (Result res)
                      
+instance Binary EvidencePiece where
+         put (M0 req) = do put (0::Word8);
+                             put req;
+         put(M1 quote) =  do put (1::Word8);
+                               put quote;
+         put(M2 res)= do put(2::Word8);
+                           put res;
+                                            
+         get = do t<- get :: Get Word8
+                  case t of
+                    0 -> do req <- get
+                            return (M0 req)
+                    1 -> do quote <- get
+                            return (M1 quote)
+                    2 -> do res <- get
+                            return (M2 res)
+
+
+
 -- Primitive types
 type PCR = Word8
 type Nonce = ByteString
@@ -73,13 +93,30 @@ instance Show EvidenceDescriptor where
 type Response = (EvidencePackage, QuotePackage)
 type EvidencePackage = (Evidence, Nonce, Signature)
 type Evidence = [EvidencePiece]
-type EvidencePiece = ByteString --for now 
+ 
+data EvidencePiece = M0 M0Rep 
+                   | M1 M1Rep
+                   | M2 M2Rep deriving (Eq, Ord, Show)
+                         
 type Hash = ByteString
 type QuotePackage = (Quote, Hash, Signature)
 
 
+type M0Rep = ByteString
+type M1Rep = ByteString
+type M2Rep = ByteString
+
+
 ePack :: Evidence -> Nonce -> ByteString
-ePack e n = (B.concat e) `append` n
+ePack e n = (ePack' e) `append` n
+
+--This is where we will need to convert measurement type to ByteString
+-- if it is something else.  see comment below
+ePack' :: Evidence -> ByteString
+ePack' es = foldr f empty es
+  where f (M0 x) y = x `append` y -- (i.e. (toByteString x) `append` y )
+        f (M1 x) y = x `append` y
+        f (M2 x) y = x `append` y
 
 qPack :: Quote -> Hash -> ByteString
 qPack q@((pcrsIn, nonce), sig) hash = 
@@ -87,6 +124,7 @@ qPack q@((pcrsIn, nonce), sig) hash =
   
 tPack :: ([PCR], Nonce) -> ByteString
 tPack (pcrs, nonce) = pack pcrs `append` nonce
+
 
 doHash :: ByteString -> ByteString
 doHash = hash

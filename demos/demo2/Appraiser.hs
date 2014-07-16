@@ -17,7 +17,7 @@ import Crypto.PubKey.RSA.PKCS15
 import Control.Exception hiding (evaluate)
 import Control.Monad
 import Data.Bits
-import Data.ByteString (ByteString, pack, append)
+import Data.ByteString (ByteString, pack, append, empty)
 import qualified Data.ByteString as B
 --import Data.Word
 --import System.IO
@@ -95,40 +95,59 @@ evaluate (mask, rnonce) (quote@(qpcrs, qnonce), signature) =
 --type Request = (DesiredEvidence, TPMRequest, Nonce)
 --type Response = (EvidencePackage, QuotePackage)
 
-evaluate :: Request -> Response -> Bool
+
+type MeasureEval = (EvidenceDescriptor, Bool)
+type Demo2EvalResult = (Bool, Bool, Bool, Bool, Bool, [MeasureEval])
+
+
+evaluate :: Request -> Response -> Demo2EvalResult
 evaluate (d, tReq, nonce) 
   ((e, eNonce, eSig), (tpmQuote@((pcrs, qNonce), qSig), hashIn, qpSig)) = 
   let pcrs' = pcrSelect tReq
       tpmBlob = tPack (pcrs, qNonce)
       eBlob = ePack e eNonce
-      qBlob = qPack tpmQuote hashIn in 
+      qBlob = qPack tpmQuote hashIn
+      r1 = verify md5 pub qBlob qpSig 
+      r2 = verify md5 pub eBlob eSig
+      r3 = verify md5 pub tpmBlob qSig 
+      r4 = ((doHash eBlob) == hashIn)
+      r5 = (nonce == eNonce)
+      me =  evaluateEvidence d e in
+ (r1, r2, r3, r4, r5, me)
   
-  if (not $ verify md5 pub qBlob qpSig) 
-  then throw $ ErrorCall e1
-  else if (not $ verify md5 pub eBlob eSig) 
-       then throw $ ErrorCall e2
-       else if (not $ verify md5 pub tpmBlob qSig) 
-            then throw $ ErrorCall e3
-            else if ((doHash eBlob) /= hashIn)
-                 then throw $ ErrorCall e4
-                 else if (nonce /= eNonce)
-                      then throw $ ErrorCall e5
-                      else if (not $ evaluateEvidence d e)
-                           then throw $ ErrorCall e6
-                           else True
+                                            
+evaluateEvidence :: DesiredEvidence -> Evidence -> [MeasureEval]
+evaluateEvidence ds es = zipWith f ds es 
+ where 
+   f :: EvidenceDescriptor -> EvidencePiece -> MeasureEval
+   f ed ep = case ed of 
+     D0 -> let res = check 0 ep in
+       (D0, res)
+     D1 -> let res = check 1 ep in
+       (D1, res)
+     D2 -> let res = check 2 ep in
+       (D2, res)
+     
+       
+       
+     
+check :: Int -> EvidencePiece -> Bool
+check id ep = let expected = M.lookup id goldenMap in
+                          case expected of 
+                            Nothing -> throw $ ErrorCall (g1 ++ show id)
+                            Just goldEp -> goldEp == ep 
+                         
+                         
+                          
+g1 :: String
+g1 = "No Golden Value for measurement #"
+                         
+
+
+expectedEvidence :: Evidence
+expectedEvidence = [M0 empty, M1 empty, M2 empty]
   
-                                             
-evaluateEvidence :: DesiredEvidence -> Evidence -> Bool
-evaluateEvidence ds es = let pairs = zip ds es
-                             realMap = M.fromList pairs in
-                        realMap == expectedEvidence  -- More fine-grained here?
-
- {-where check :: EvidenceDescriptor -> Bool
-       check ed = case M.lookup ed of Nothing -> False
-                                                                      Just x -> x ==  -}
-
---expectedEvidence :: M.Map EvidenceDescriptor EvidencePiece
-expectedEvidence = M.fromList [(D0, B.empty), (D1, B.empty), (D2, B.empty)]
+goldenMap = M.fromList $ zip [0..2] expectedEvidence
                                              
 e1 :: String
 e1 = "Quote Package Signature could not be verified."
@@ -146,7 +165,7 @@ e5 :: String
 e5 = "Nonce could not be verified."
 
 e6 :: String
-e6 = "Evidence not of expected value."
+e6 = "Measurement #"
 
  
         

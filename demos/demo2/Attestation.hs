@@ -43,7 +43,7 @@ measurePrompt = loop
                         _     -> do putStrLn "Error: Please Enter a Number."
                                     loop
 
-
+main :: IO ()
 main = do
   appraiserID <- prompt
   chan <- server_init appraiserID
