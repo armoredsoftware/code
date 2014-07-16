@@ -21,6 +21,11 @@ yum -y install xen-devel
 
 yum -y install openvswitch
 
+# We are not comfortable yet with firewalld, openvswitch bridges and NAT yet so lets us iptables instead.
+systemctl stop firewalld
+systemctl disable firewalld
+yum -y install iptables-services
+
 # Create bridge config files and modify static network device config
 # Note that this network device config setup makes it so that we do not have
 # do do the following type of setup from the command line.:
@@ -39,6 +44,8 @@ iptables -t nat -A POSTROUTING -o ${CLOUD_EXT_COMPUTE_DEVICE} -j MASQUERADE
 # Put the iptables on the persitance place
 iptables-save > /etc/sysconfig/iptables
 
+systemctl enable iptables.service
+
 #firewall-cmd --permanent --zone=external --add-masquerade
 #firewall-cmd --permanent --zone=external --change-interface=${CLOUD_EXT_COMPUTE_DEVICE}
 #firewall-cmd --permanent --zone=internal --change-interface=${CLOUD_EXT_COMPUTE_BRIDGE}
@@ -52,6 +59,7 @@ systemctl enable openvswitch.service
 systemctl start openvswitch.service
 
 systemctl restart network.service
+systemctl start iptables.service
 
 # setup some xen configuration.
 
