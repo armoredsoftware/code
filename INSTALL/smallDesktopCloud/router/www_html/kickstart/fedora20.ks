@@ -115,7 +115,7 @@ if [ ! \$# -eq 1 ] ; then
   exit 1
 fi
 git remote set-url origin https://\${1}@github.com/armoredsoftware/code.git
-git config user.name "\${1}"
+git config --global user.name "\${1}"
 EOF
 
 chmod a+x ${GIT_CHANGE_USER}
