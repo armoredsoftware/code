@@ -102,13 +102,13 @@ getPubKey :: PublicKey
 getPubKey = snd getKeys
 
 readKeys :: IO (PrivateKey, PublicKey)
-readKeys =
-     do handle <- openFile "keys.txt" ReadMode
-        priString <- hGetLine handle
-        pubString <- hGetLine handle
-	let pri :: PrivateKey
-            pri = read priString
-            pub :: PublicKey
-            pub = read pubString
-        hClose handle
-	return (pri, pub)
+readKeys = do
+  handle <- openFile "keys.txt" ReadMode
+  priString <- hGetLine handle
+  pubString <- hGetLine handle
+  let pri :: PrivateKey
+      pri = read priString
+      pub :: PublicKey
+      pub = read pubString
+  hClose handle
+  return (pri, pub)

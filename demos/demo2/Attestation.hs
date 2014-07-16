@@ -24,9 +24,6 @@ import qualified Data.ByteString as B
 --import System.IO.Unsafe (unsafePerformIO)
 --import Data.Binary
 
-
-
-
 prompt:: IO (Int)
 prompt= loop
       where loop = do putStrLn "Which Domain ID is the Appraiser?"
@@ -72,7 +69,8 @@ mkResponse (desiredE, desiredPCRs, nonce) = do
 
 
 signQuote :: Quote -> Hash -> QuotePackage
-signQuote q@((pcrsIn, nonce), sig) hash = case sign Nothing md5 pri res of
+signQuote q@((pcrsIn, nonce), sig) hash =
+  case sign Nothing md5 pri res of
          Left err -> throw . ErrorCall $ show err
          Right signature -> (q, hash, signature) 
  where res =  qPack q hash
@@ -80,7 +78,8 @@ signQuote q@((pcrsIn, nonce), sig) hash = case sign Nothing md5 pri res of
   
 
 signEvidence :: Evidence -> Nonce -> EvidencePackage
-signEvidence e n = case sign Nothing md5 pri res of
+signEvidence e n =
+  case sign Nothing md5 pri res of
          Left err -> throw . ErrorCall $ show err
          Right signature -> (e, n, signature) 
          
@@ -147,12 +146,6 @@ pri :: PrivateKey
 --((pub, pri), gen') = generate gen 255 3
 
 
-
-
-  
-  
-  
-  
 --Error messages(only for debugging, at least for now)
 requestReceiveError :: String
 requestReceiveError = "Attester did not receive a Request as expected"

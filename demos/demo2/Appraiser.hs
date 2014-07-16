@@ -56,26 +56,24 @@ mkTPMRequest mask =
 
 
 sendRequest :: Request -> IO (LibXenVChan)
-sendRequest req = 
-  do id <-getDomId
-     putStrLn $ "Appraiser Domain id: "++(show id)
-     other <- prompt
-     chan <- client_init other
-     putStrLn $ "\n" ++ "Appraiser Sending: "++(show $ Appraisal req) ++ "\n"
-     send chan $ Appraisal req
-     return chan
+sendRequest req = do
+  id <-getDomId
+  putStrLn $ "Appraiser Domain id: "++(show id)
+  other <- prompt
+  chan <- client_init other
+  putStrLn $ "\n" ++ "Appraiser Sending: "++(show $ Appraisal req) ++ "\n"
+  send chan $ Appraisal req
+  return chan
 
 receiveResponse :: LibXenVChan -> IO Response
 receiveResponse chan =  do
-             ctrlWait chan
-             res :: Shared <- receive chan
-             case res of 
-                                 Attestation response ->  do
-                                                                putStrLn $ "\n" ++ "Appraiser Received: "
-                                                                                               ++ (show res)++ "\n"
-                                                                return response
-                                 otherwise ->  throw $ ErrorCall quoteReceiveError 
-                                                            -- TODO:  error handling here?
+  ctrlWait chan
+  res :: Shared <- receive chan
+  case res of 
+    Attestation response ->  do
+      putStrLn $ "\n" ++ "Appraiser Received: " ++ (show res)++ "\n"
+      return response
+    otherwise ->  throw $ ErrorCall quoteReceiveError --TODO: error handling?
 
 {-
 evaluate :: Request -> Quote -> Bool
@@ -106,18 +104,18 @@ evaluate (d, tReq, nonce)
       qBlob = qPack tpmQuote hashIn in 
   
   if (not $ verify md5 pub qBlob qpSig) 
-           then throw $ ErrorCall e1
-           else if (not $ verify md5 pub eBlob eSig) 
-                then throw $ ErrorCall e2
-                else if (not $ verify md5 pub tpmBlob qSig) 
-                        then throw $ ErrorCall e3
-                        else if ((doHash eBlob) /= hashIn)
-                                then throw $ ErrorCall e4
-                                else if (nonce /= eNonce)
-                                        then throw $ ErrorCall e5
-                                        else if (not $ evaluateEvidence d e)
-                                                then throw $ ErrorCall e6
-                                                     else True
+  then throw $ ErrorCall e1
+  else if (not $ verify md5 pub eBlob eSig) 
+       then throw $ ErrorCall e2
+       else if (not $ verify md5 pub tpmBlob qSig) 
+            then throw $ ErrorCall e3
+            else if ((doHash eBlob) /= hashIn)
+                 then throw $ ErrorCall e4
+                 else if (nonce /= eNonce)
+                      then throw $ ErrorCall e5
+                      else if (not $ evaluateEvidence d e)
+                           then throw $ ErrorCall e6
+                           else True
   
                                              
 evaluateEvidence :: DesiredEvidence -> Evidence -> Bool
