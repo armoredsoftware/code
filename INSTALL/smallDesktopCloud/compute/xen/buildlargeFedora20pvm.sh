@@ -9,7 +9,7 @@ UTIL_DIR=${UTIL_DIR:-${TOP_LEVEL}/util}
 { . ${UTIL_DIR}/fns ; } || { echo "!!! Failed to source file ${UTIL_DIR}/fns." ; exit 1; }
 
 # Sizes are in Megabytes.
-ROOT_SIZE=6144
+ROOT_SIZE=12144
 
 PVH_NAME=Fedora_20_server_PVH
 IMAGES_DIR=/xenImages
@@ -25,6 +25,12 @@ check_root_user
 
 if [ ! -f ${IMAGES_DIR} ] ; then
   mkdir ${IMAGES_DIR}
+fi
+
+# make sure we have wget
+rpm -q wget
+if [ $? -ne 0 ] ; then
+  yum -y install wget
 fi
 
 SCRIPT_DIR=`pwd`
