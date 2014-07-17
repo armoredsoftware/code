@@ -11,7 +11,6 @@ import Crypto.Random
 import Crypto.PubKey.HashDescr
 import Crypto.PubKey.RSA
 import Crypto.PubKey.RSA.PKCS15
---import Crypto.Hash.MD5(hash)
 
 -- utility libraries
 import Control.Exception hiding (evaluate)
@@ -19,10 +18,8 @@ import Control.Monad
 import Data.Bits
 import Data.ByteString (ByteString, pack, append, empty)
 import qualified Data.ByteString as B
---import Data.Word
 import System.IO
 import System.IO.Unsafe (unsafePerformIO)
---import Data.Binary
 
 prompt:: IO (Int)
 prompt= loop
@@ -52,7 +49,8 @@ main = do
   sendResponse chan resp
   return ()
 
-
+-- Attestation primitives  
+  
 mkResponse :: Request -> IO Response
 mkResponse (desiredE, desiredPCRs, nonce) = do
   measurerID <- measurePrompt
@@ -64,28 +62,7 @@ mkResponse (desiredE, desiredPCRs, nonce) = do
       hash = doHash $ ePack eList nonce
       quoPack = signQuote quote hash
         
-  return (evPack, quoPack) {-where
-  ep = ([empty], empty, empty)
-  qp = ((([bit 0], empty), empty), empty, empty) -}
-
-
-signQuote :: Quote -> Hash -> QuotePackage
-signQuote quote hash =
-  case sign Nothing md5 pri res of
-         Left err -> throw . ErrorCall $ show err
-         Right signature -> (quote, hash, signature) 
- where res =  qPack quote hash
---type Quote = (([PCR], Nonce), Signature)--simulates TPM   
-  
-
-signEvidence :: Evidence -> Nonce -> EvidencePackage
-signEvidence e n =
-  case sign Nothing md5 pri res of
-         Left err -> throw . ErrorCall $ show err
-         Right signature -> (e, n, signature) 
-         
-   where res = ePack e n
-
+  return (evPack, quoPack)
 
 getEvidencePiece :: LibXenVChan -> EvidenceDescriptor -> IO EvidencePiece
 getEvidencePiece chan ed = do
@@ -95,7 +72,6 @@ getEvidencePiece chan ed = do
   evidence :: EvidencePiece <- receive chan --TODO:  error handling
   putStrLn $ "Received: " ++ (show evidence)
   return evidence
-  
 
 receiveRequest :: LibXenVChan -> IO Request
 receiveRequest chan = do
@@ -113,6 +89,21 @@ sendResponse chan resp = do
   send chan $ Attestation resp
   return () 
 
+signQuote :: Quote -> Hash -> QuotePackage
+signQuote quote hash =
+  case sign Nothing md5 pri res of
+         Left err -> throw . ErrorCall $ show err
+         Right signature -> (quote, hash, signature) 
+ where res =  qPack quote hash
+
+signEvidence :: Evidence -> Nonce -> EvidencePackage
+signEvidence e n =
+  case sign Nothing md5 pri res of
+         Left err -> throw . ErrorCall $ show err
+         Right signature -> (e, n, signature) 
+         
+   where res = ePack e n
+
 mkSignedTPMQuote :: TPMRequest -> Nonce -> Quote
 mkSignedTPMQuote mask nonce =
     let pcrs' = pcrSelect mask
@@ -121,6 +112,7 @@ mkSignedTPMQuote mask nonce =
          Left err -> throw . ErrorCall $ show err
          Right signature -> (quote, signature) 
                  
+                            
   -- PCR primitives
 pcrsLocal :: [PCR]
 pcrsLocal = a --b
@@ -141,20 +133,11 @@ md5 = hashDescrMD5
 
 pub :: PublicKey
 pri :: PrivateKey
---(pub, pri) = fromJust $ generateWith (5,11) 255 0x10001
 (pri, pub) = getKeys
---gen' :: SystemRNG
---((pub, pri), gen') = generate gen 255 3
 
-
---Error messages(only for debugging, at least for now)
-requestReceiveError :: String
-requestReceiveError = "Attester did not receive a Request as expected"
-  
-
-
-
-
+-- Utility functions to get keys
+attKeyFileName :: String
+attKeyFileName = "attKeys.txt"
 
 getKeys :: (PrivateKey, PublicKey)
 getKeys = unsafePerformIO $ readKeys
@@ -177,6 +160,7 @@ readKeys = do
   hClose handle
   return (pri, pub)
   
-  
-attKeyFileName :: String
-attKeyFileName = "attKeys.txt"
+
+--Error messages(only for debugging, at least for now)
+requestReceiveError :: String
+requestReceiveError = "Attester did not receive a Request as expected"
