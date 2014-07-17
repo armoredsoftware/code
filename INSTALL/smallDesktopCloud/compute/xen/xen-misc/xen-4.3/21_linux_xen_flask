@@ -123,7 +123,7 @@ linux_entry ()
   printf '%s\n' "${prepare_boot_cache}" | sed "s/^/$submenu_indentation/"
   xmessage="$(gettext_printf "Loading Xen %s ..." ${xen_version})"
   lmessage="$(gettext_printf "Loading Linux %s ..." ${version})"
-  non_flask_enforcing_args=$(echo "${xen_args}" | sed -e "s/flask_enforcing//g") 
+  non_flask_enforcing_args=$(echo "${xen_args}" | sed -e "s/flask_enforcing=[01]//g") 
  if [ "${non_flask_enforcing_args}" == "${xen_args}" ] ; then
      xen_args="flask_enforcing=1 ${xen_args}"
   fi
