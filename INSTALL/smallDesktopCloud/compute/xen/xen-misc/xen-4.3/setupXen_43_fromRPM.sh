@@ -75,6 +75,10 @@ systemctl start iptables.service
 # Enable the xen domain services.
 systemctl enable xendomains.service
 
+# We need to limit the memory used by dom0 so that there is room in memory
+# for the guest VMs.
+file_name_equal_val_replace_or_add /etc/default/grub GRUB_CMDLINE_XEN "dom0_mem=3072M,max:3072M loglvl=all guest_loglvl=all"
+
 # We have a grub configuration script that will add more entries for xen hypervisors
 # with xsm enabled in the grub configuration 
 cp ./21_linux_xen_flask /etc/grub.d
