@@ -20,8 +20,8 @@ import Data.Bits
 import Data.ByteString (ByteString, pack, append, empty)
 import qualified Data.ByteString as B
 --import Data.Word
---import System.IO
---import System.IO.Unsafe (unsafePerformIO)
+import System.IO
+import System.IO.Unsafe (unsafePerformIO)
 --import Data.Binary
 
 prompt:: IO (Int)
@@ -70,11 +70,11 @@ mkResponse (desiredE, desiredPCRs, nonce) = do
 
 
 signQuote :: Quote -> Hash -> QuotePackage
-signQuote q@((pcrsIn, nonce), sig) hash =
+signQuote quote hash =
   case sign Nothing md5 pri res of
          Left err -> throw . ErrorCall $ show err
-         Right signature -> (q, hash, signature) 
- where res =  qPack q hash
+         Right signature -> (quote, hash, signature) 
+ where res =  qPack quote hash
 --type Quote = (([PCR], Nonce), Signature)--simulates TPM   
   
 
@@ -122,18 +122,18 @@ mkSignedTPMQuote mask nonce =
          Right signature -> (quote, signature) 
                  
   -- PCR primitives
-pcrs :: [PCR]
-pcrs = correct --wrong
-  where correct :: [PCR]
-        correct = map bit [0..7]
+pcrsLocal :: [PCR]
+pcrsLocal = a --b
+  where a :: [PCR]
+        a = map bit [0..7]
 
-        wrong :: [PCR]
-        --wrong = [(bit 3)] ++ (map bit [1..7])
-        wrong = (map bit [0..6]) ++ [(bit 7)]
+        b :: [PCR]
+        b = [(bit 3)] ++ (map bit [1..7])
+     
 
 pcrSelect :: TPMRequest -> [PCR]
 pcrSelect mask = 
-    [ x | (x, n) <- zip pcrs [0..7], testBit mask n] 
+    [ x | (x, n) <- zip pcrsLocal [0..7], testBit mask n] 
 
 -- Crypto primitives
 md5 :: HashDescr
@@ -151,3 +151,32 @@ pri :: PrivateKey
 requestReceiveError :: String
 requestReceiveError = "Attester did not receive a Request as expected"
   
+
+
+
+
+
+getKeys :: (PrivateKey, PublicKey)
+getKeys = unsafePerformIO $ readKeys
+
+getPriKey :: PrivateKey
+getPriKey = fst getKeys
+
+getPubKey :: PublicKey
+getPubKey = snd getKeys
+
+readKeys :: IO (PrivateKey, PublicKey)
+readKeys = do
+  handle <- openFile attKeyFileName ReadMode
+  priString <- hGetLine handle
+  pubString <- hGetLine handle
+  let pri :: PrivateKey
+      pri = read priString
+      pub :: PublicKey
+      pub = read pubString
+  hClose handle
+  return (pri, pub)
+  
+  
+attKeyFileName :: String
+attKeyFileName = "attKeys.txt"

@@ -17,10 +17,10 @@ import Crypto.PubKey.RSA.PKCS15
 import Control.Exception hiding (evaluate)
 import Control.Monad
 import Data.Bits
-import Data.ByteString (ByteString, pack, append, empty)
+import Data.ByteString (ByteString, pack, append, empty, cons)
 import qualified Data.ByteString as B
 --import Data.Word
---import System.IO
+import System.IO
 import System.IO.Unsafe (unsafePerformIO)
 --import Data.Binary
 import qualified Data.Map.Lazy as M (fromList, lookup, empty)
@@ -75,34 +75,17 @@ receiveResponse chan =  do
       return response
     otherwise ->  throw $ ErrorCall quoteReceiveError --TODO: error handling?
 
-{-
-evaluate :: Request -> Quote -> Bool
-evaluate (mask, rnonce) (quote@(qpcrs, qnonce), signature) =
-    let pcrs' = pcrSelect mask in
-        if (not $ verify md5 pub (pack' quote) signature) 
-           then throw $ ErrorCall "Signature could not be verified."
-           else if (rnonce /= qnonce)  
-                then throw $ ErrorCall "Nonce could not be verified."
-                else if (pcrs' /= qpcrs) 
-                     then throw $ ErrorCall "PCR not of expected value."
-                     else True
--}
-
---type Quote = (([PCR], Nonce), Signature)
---type EvidencePackage = (Evidence, Nonce, Signature)
---type QuotePackage = (Quote, Hash, Signature)
-
---type Request = (DesiredEvidence, TPMRequest, Nonce)
---type Response = (EvidencePackage, QuotePackage)
 
 
 showDemo2EvalResult :: Demo2EvalResult -> IO ()
-showDemo2EvalResult (r1, r2, r3, r4, r5, ms) = do
+showDemo2EvalResult (r1, r2, r3, r4, r5, r6, r7, ms) = do
      putStrLn $ e1 ++ show r1
      putStrLn $ e2 ++ show r2
      putStrLn $ e3 ++ show r3
      putStrLn $ e4 ++ show r4
      putStrLn $ e5 ++ show r5
+     putStrLn $ e6 ++ show r6
+     putStrLn $ e7 ++ show r7
      mapM_ f ms 
      
      
@@ -113,22 +96,24 @@ showDemo2EvalResult (r1, r2, r3, r4, r5, ms) = do
 
 
 type MeasureEval = (EvidenceDescriptor, Bool)
-type Demo2EvalResult = (Bool, Bool, Bool, Bool, Bool, [MeasureEval])
+type Demo2EvalResult = (Bool, Bool, Bool, Bool, Bool, Bool, Bool,[MeasureEval])
 
 evaluate :: Request -> Response -> Demo2EvalResult
 evaluate (d, tReq, nonce) 
-  ((e, eNonce, eSig), (tpmQuote@((pcrs, qNonce), qSig), hashIn, qpSig)) = 
+  ((e, eNonce, eSig), (tpmQuote@((pcrsIn, qNonce), qSig), hashIn, qpSig)) = 
   let pcrs' = pcrSelect tReq
-      tpmBlob = tPack (pcrs, qNonce)
+      tpmBlob = tPack (pcrsIn, qNonce)
       eBlob = ePack e eNonce
       qBlob = qPack tpmQuote hashIn
       r1 = verify md5 pub qBlob qpSig 
       r2 = verify md5 pub eBlob eSig
       r3 = verify md5 pub tpmBlob qSig 
-      r4 = ((doHash eBlob) == hashIn)
-      r5 = (nonce == eNonce)
+      r4 = pcrsIn == pcrs'
+      r5 = nonce == qNonce
+      r6 = (doHash eBlob) == hashIn
+      r7 = nonce == eNonce
       ms =  evaluateEvidence d e in
- (r1, r2, r3, r4, r5, ms)
+ (r1, r2, r3, r4, r5, r6, r7, ms)
   
                                             
 evaluateEvidence :: DesiredEvidence -> Evidence -> [MeasureEval]
@@ -144,7 +129,7 @@ evaluateEvidence ds es = zipWith f ds es
        (D2, res)
      
        
-       
+
      
 check :: Int -> EvidencePiece -> Bool
 check id ep = let expected = M.lookup id goldenMap in
@@ -160,8 +145,20 @@ g1 = "No Golden Value for measurement #"
 
 
 expectedEvidence :: Evidence
-expectedEvidence = [M0 (B.cons (bit 0) empty), M1 empty, M2 empty]
+expectedEvidence = 
+  [M0 expectedM0Val , M1 expectedM1Val, M2 expectedM2Val]
   
+  
+expectedM0Val :: M0Rep
+expectedM0Val = cons (bit 0) empty
+
+expectedM1Val :: M1Rep
+expectedM1Val = cons (bit 1) empty
+
+expectedM2Val :: M2Rep
+expectedM2Val = cons (bit 2) empty
+                   
+                   
 goldenMap = M.fromList $ zip [0..2] expectedEvidence
                                              
 e1 :: String
@@ -174,31 +171,37 @@ e3 :: String
 e3 = "TPM Signature: "  
 
 e4 :: String
-e4 = "Integrity of evidence package: "  
+e4 = "PCR values: "
 
 e5 :: String
-e5 = "Nonce verified: "
+e5 = "Quote Nonce verified: "
 
 e6 :: String
-e6 = "Measurement #"
+e6 = "Integrity of evidence package: "  
+
+e7 :: String
+e7 = "Evidence Nonce verified: "
+
+e8 :: String
+e8 = "Measurement #"
 
  
         
         
         
 -- PCR primitives
-pcrs :: [PCR]
-pcrs = correct --wrong
-  where correct :: [PCR]
-        correct = map bit [0..7]
+pcrsExpected :: [PCR]
+pcrsExpected = a --b
+  where a :: [PCR]
+        a= map bit [0..7]
 
-        wrong :: [PCR]
-        --wrong = [(bit 3)] ++ (map bit [1..7])
-        wrong = (map bit [0..6]) ++ [(bit 7)]
+        b :: [PCR]
+        b = [(bit 3)] ++ (map bit [1..7])
+     
 
 pcrSelect :: TPMRequest -> [PCR]
 pcrSelect mask = 
-    [ x | (x, n) <- zip pcrs [0..7], testBit mask n]
+    [ x | (x, n) <- zip pcrsExpected [0..7], testBit mask n]
 
 -- Crypto primitives
 md5 :: HashDescr
@@ -221,3 +224,29 @@ pri :: PrivateKey
 --Error messages(only for debugging, at least for now)
 quoteReceiveError :: String
 quoteReceiveError = "Appraiser did not receive a Quote as expected"
+
+
+getKeys :: (PrivateKey, PublicKey)
+getKeys = unsafePerformIO $ readKeys
+
+getPriKey :: PrivateKey
+getPriKey = fst getKeys
+
+getPubKey :: PublicKey
+getPubKey = snd getKeys
+
+readKeys :: IO (PrivateKey, PublicKey)
+readKeys = do
+  handle <- openFile apprKeysFileName ReadMode
+  priString <- hGetLine handle
+  pubString <- hGetLine handle
+  let pri :: PrivateKey
+      pri = read priString
+      pub :: PublicKey
+      pub = read pubString
+  hClose handle
+  return (pri, pub)
+  
+  
+apprKeysFileName :: String
+apprKeysFileName = "apprKeys.txt"

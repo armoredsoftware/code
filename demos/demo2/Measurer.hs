@@ -5,7 +5,7 @@ import VChanUtil
 import System.IO
 
 import Data.Binary
-import Data.ByteString (ByteString, cons, empty)--, pack, append, empty)
+import Data.ByteString (ByteString, cons, empty)
 import Data.Bits
 import Control.Monad
 
@@ -69,18 +69,6 @@ main = do
   forever $ process chan
   return ()
 
-
-
-receiveDescr :: LibXenVChan -> IO EvidenceDescriptor
-receiveDescr chan = do
-  ctrlWait chan
-  ed :: EvidenceDescriptor <- receive chan
-  return ed
-  
-sendEvidence :: LibXenVChan -> EvidencePiece ->  IO ()
-sendEvidence chan ep = do
-  send chan ep
-  return ()
   
 process :: LibXenVChan -> IO ()
 process chan = do
@@ -90,8 +78,7 @@ process chan = do
   send chan ep
   return ()
 
-  
-  
+
 measure :: EvidenceDescriptor -> EvidencePiece
 measure ed = case ed of 
   D0 -> M0 m0Val
