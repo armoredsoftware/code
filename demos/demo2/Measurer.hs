@@ -7,6 +7,7 @@ import System.IO
 import Data.Binary
 import Data.ByteString (ByteString, cons, empty)--, pack, append, empty)
 import Data.Bits
+import Control.Monad
 
 data EvidencePiece = M0 M0Rep 
                    | M1 M1Rep
@@ -65,7 +66,7 @@ main :: IO ()
 main = do
   measurerID <- prompt
   chan <- server_init measurerID
-  ed <- receiveDescr chan
+  forever $ process chan
   return ()
 
 
@@ -81,6 +82,14 @@ sendEvidence chan ep = do
   send chan ep
   return ()
   
+process :: LibXenVChan -> IO ()
+process chan = do
+  ctrlWait chan
+  ed :: EvidenceDescriptor <- receive chan
+  let ep = measure ed
+  send chan ep
+  return ()
+
   
   
 measure :: EvidenceDescriptor -> EvidencePiece

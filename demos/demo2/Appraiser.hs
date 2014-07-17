@@ -160,7 +160,7 @@ g1 = "No Golden Value for measurement #"
 
 
 expectedEvidence :: Evidence
-expectedEvidence = [M0 empty, M1 empty, M2 empty]
+expectedEvidence = [M0 (B.cons (bit 0) empty), M1 empty, M2 empty]
   
 goldenMap = M.fromList $ zip [0..2] expectedEvidence
                                              

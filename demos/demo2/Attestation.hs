@@ -58,6 +58,7 @@ mkResponse (desiredE, desiredPCRs, nonce) = do
   measurerID <- measurePrompt
   chan <- client_init measurerID
   eList <- mapM (getEvidencePiece chan) desiredE
+  --close chan
   let evPack = signEvidence eList nonce
       quote = mkSignedTPMQuote desiredPCRs nonce
       hash = doHash $ ePack eList nonce

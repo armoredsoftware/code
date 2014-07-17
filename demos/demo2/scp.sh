@@ -5,3 +5,5 @@
 
 scp Attestation Appraiser keys.txt root@10.100.0.228: ;
 scp Attestation Appraiser keys.txt root@10.100.0.247: ;
+scp Measurer root@10.100.0.222: ;
+

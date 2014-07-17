@@ -1,4 +1,5 @@
 #!/bin/bash
   ghc Appraiser.hs 
   ghc Attestation.hs
+  ghc Measurer.hs
   ./scp.sh
