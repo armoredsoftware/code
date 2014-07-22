@@ -1,11 +1,15 @@
+{-# LANGUAGE OverloadedStrings, DeriveGeneric #-}
 module Demo2Shared where
 
 -- utility libraries
 import Data.Binary
-import Data.ByteString (ByteString, pack, append, empty)
-import qualified Data.ByteString as B
+import qualified Data.ByteString as B (ByteString, pack, append, empty) 
+
+
+--import qualified Data.ByteString as B
 import System.IO
 import System.IO.Unsafe (unsafePerformIO)
+import GHC.Generics as G
 
 -- crypto libraries
 import Crypto.PubKey.RSA
@@ -41,35 +45,35 @@ instance Binary Shared where
                      return (Result res)
                      
 instance Binary EvidencePiece where
-         put (M0 req) = do put (0::Word8);
-                             put req;
-         put(M1 quote) =  do put (1::Word8);
-                               put quote;
-         put(M2 res)= do put(2::Word8);
-                           put res;
+         put (Demo2Shared.M0 req) = do put (0::Word8);
+                                       put req;
+         put(Demo2Shared.M1 quote) =  do put (1::Word8);
+                                         put quote;
+         put(Demo2Shared.M2 res)= do put(2::Word8);
+                                     put res;
                                             
          get = do t<- get :: Get Word8
                   case t of
                     0 -> do req <- get
-                            return (M0 req)
+                            return (Demo2Shared.M0 req)
                     1 -> do quote <- get
-                            return (M1 quote)
+                            return (Demo2Shared.M1 quote)
                     2 -> do res <- get
-                            return (M2 res)
+                            return (Demo2Shared.M2 res)
 
 
 
 -- Primitive types
 type PCR = Word8
-type Nonce = ByteString
-type Signature = ByteString
+type Nonce = B.ByteString
+type Signature = B.ByteString
 type TPMRequest = Word8 -- Request = (Mask, Nonce)
 type Quote = (([PCR], Nonce), Signature)--simulates TPM 
 
 --Request
 type Request = (DesiredEvidence, TPMRequest, Nonce)
 type DesiredEvidence = [EvidenceDescriptor]
-data EvidenceDescriptor = D0 | D1 | D2 deriving(Eq, Ord) --for now
+data EvidenceDescriptor = D0 | D1 | D2 deriving(Eq, Ord, Generic) --for now
 
 instance Binary EvidenceDescriptor where
   put D0 = do put (0::Word8)
@@ -96,37 +100,37 @@ type Evidence = [EvidencePiece]
  
 data EvidencePiece = M0 M0Rep 
                    | M1 M1Rep
-                   | M2 M2Rep deriving (Eq, Ord, Show)
+                   | M2 M2Rep deriving (Eq, Ord, Show, Generic)
                          
-type Hash = ByteString
+type Hash = B.ByteString
 type QuotePackage = (Quote, Hash, Signature)
 
 
-type M0Rep = ByteString
-type M1Rep = ByteString
-type M2Rep = ByteString
+type M0Rep = B.ByteString
+type M1Rep = B.ByteString
+type M2Rep = B.ByteString
 
 
-ePack :: Evidence -> Nonce -> ByteString
-ePack e n = (ePack' e) `append` n
+ePack :: Evidence -> Nonce -> B.ByteString
+ePack e n = (ePack' e) `B.append` n
 
 --This is where we will need to convert measurement type to ByteString
 -- if it is something else.  see comment below
-ePack' :: Evidence -> ByteString
-ePack' es = foldr f empty es
-  where f (M0 x) y = x `append` y -- (i.e. (toByteString x) `append` y )
-        f (M1 x) y = x `append` y
-        f (M2 x) y = x `append` y
+ePack' :: Evidence -> B.ByteString
+ePack' es = foldr f B.empty es
+  where f (Demo2Shared.M0 x) y = x `B.append` y -- (i.e. (toByteString x) `append` y )
+        f (Demo2Shared.M1 x) y = x `B.append` y
+        f (Demo2Shared.M2 x) y = x `B.append` y
 
-qPack :: Quote -> Hash -> ByteString
+qPack :: Quote -> Hash -> B.ByteString
 qPack q@((pcrsIn, nonce), sig) hash = 
-  (tPack (pcrsIn, nonce)) `append` sig `append` hash
+  (tPack (pcrsIn, nonce)) `B.append` sig `B.append` hash
   
-tPack :: ([PCR], Nonce) -> ByteString
-tPack (pcrs, nonce) = pack pcrs `append` nonce
+tPack :: ([PCR], Nonce) -> B.ByteString
+tPack (pcrs, nonce) = B.pack pcrs `B.append` nonce
 
 
-doHash :: ByteString -> ByteString
+doHash :: B.ByteString -> B.ByteString
 doHash = hash
 
 
