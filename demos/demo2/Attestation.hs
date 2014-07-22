@@ -71,7 +71,7 @@ getEvidencePiece :: LibXenVChan -> EvidenceDescriptor -> IO EvidencePiece
 getEvidencePiece chan ed = do
   putStrLn $ "\n" ++ "Attestation Agent Sending: " ++ (show ed)
   logger <- createLogger
-  sendChunkedMessageByteString logger chan (toChunks (encode (wrapED ed)))
+  sendChunkedMessageByteString logger chan (toChunks (encode (evidenceDescriptor ed)))
   --send chan $ encode (wrapED ed)
   ctrlWait chan
   logger <- createLogger
