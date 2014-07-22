@@ -1,5 +1,8 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 
+
+import JSONCaster
+import Data.Aeson
 --vchan library
 import VChanUtil
 import System.IO
@@ -72,10 +75,14 @@ main = do
   
 process :: LibXenVChan -> IO ()
 process chan = do
+  
   ctrlWait chan
-  ed :: EvidenceDescriptor <- receive chan
-  let ep = measure ed
-  send chan ep
+  logger <- createLogger
+  ed :: EvidenceDescriptor <- stripED $ fromJust (decode (fromChunks (readChunkedMessageString logger chan)) :: Maybe EvidenceDescriptor)
+--(receive chan) :: Maybe EvidenceDescriptorWrapper)
+  let ep = toChunks (encode (EPW (measure ed)))
+  logger <- createLogger
+  sendChunkedMessageString logger chan ep 
   return ()
 
 

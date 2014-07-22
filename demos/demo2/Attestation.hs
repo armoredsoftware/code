@@ -2,6 +2,7 @@
 
 --our libraries
 import Demo2Shared
+import JSONCaster
 
 --vchan library
 import VChanUtil
@@ -20,6 +21,8 @@ import Data.ByteString (ByteString, pack, append, empty)
 import qualified Data.ByteString as B
 import System.IO
 import System.IO.Unsafe (unsafePerformIO)
+
+import Data.Aeson
 
 prompt:: IO (Int)
 prompt= loop
@@ -67,9 +70,12 @@ mkResponse (desiredE, desiredPCRs, nonce) = do
 getEvidencePiece :: LibXenVChan -> EvidenceDescriptor -> IO EvidencePiece
 getEvidencePiece chan ed = do
   putStrLn $ "\n" ++ "Attestation Agent Sending: " ++ (show ed)
-  send chan $ ed
+  logger <- createLogger
+  sendChunkedMessageByteString logger chan (toChunks (encode (wrapED ed)))
+  --send chan $ encode (wrapED ed)
   ctrlWait chan
-  evidence :: EvidencePiece <- receive chan --TODO:  error handling
+  logger <- createLogger
+  evidence :: EvidencePiece <- fromJust ((decode (fromChunks (readChunkedMessageByteString logger chan)) ) :: Maybe EvidencePiece ) --TODO:  error handling
   putStrLn $ "Received: " ++ (show evidence)
   return evidence
 
