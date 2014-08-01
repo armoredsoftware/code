@@ -1,6 +1,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 import Network.Transport
 import VChanUtil
+import Control.Monad
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Char8 as BSC
 
@@ -75,12 +76,11 @@ main = do dom <- prompt
           transport <- mkTransport dom 
           Right endpoint  <- newEndPoint transport
           Right connection <- connect endpoint (EndPointAddress (BSC.pack (show(dom)) )) ReliableOrdered defaultConnectHints 
-          putStrLn "Sending Message"
-          Network.Transport.send connection [(BSC.pack "This is a test")]
-          Network.Transport.send connection [(BSC.pack "This will be ignored")]
-          
-          e <- Network.Transport.receive endpoint
-          printEvent e
-          e <- Network.Transport.receive endpoint
-          printEvent e
-          putStrLn ""
+          forever $ do
+             putStrLn "Enter text to send: "
+             input <- getLine
+             putStrLn ""
+             Network.Transport.send connection [(BSC.pack input)]
+             e <- Network.Transport.receive endpoint
+             printEvent e
+             putStrLn ""
