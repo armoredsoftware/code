@@ -62,22 +62,25 @@ prompt= loop
                          [(id,_)] -> return id
                          _     -> do putStrLn "Error: Please Enter a Number."
                                      loop
+printEvent:: Event->IO()
+printEvent e = case e of
+            Received cid mesg ->  do putStrLn "Received:"
+                                     let strings =  map (\m ->( BSC.unpack m)) mesg
+                                     sequence_ $ map putStrLn strings
+            ConnectionClosed cid -> putStrLn "closed"
+            ConnectionOpened cid rel addr -> putStrLn (show addr)
 
 
 main = do dom <- prompt
           transport <- mkTransport dom 
           Right endpoint  <- newEndPoint transport
-         -- Right connection <- connect endpoint (EndPointAddress (BSC.pack (show(dom)) )) ReliableOrdered defaultConnectHints 
+          Right connection <- connect endpoint (EndPointAddress (BSC.pack (show(dom)) )) ReliableOrdered defaultConnectHints 
           putStrLn "Sending Message"
-         -- Network.Transport.send connection [(BSC.pack "This will be ignored just signals to create the client init for the testReceive")]
-         -- Network.Transport.send connection [(BSC.pack "This is a test")]
+          Network.Transport.send connection [(BSC.pack "This is a test")]
+          Network.Transport.send connection [(BSC.pack "This will be ignored")]
           
           e <- Network.Transport.receive endpoint
-          case e of
-            Received cid mesg ->  do putStrLn "Received:"
-                                     let strings =  map (\m ->( BSC.unpack m)) mesg
-                                     sequence_ $ map putStrLn strings 
-            ConnectionClosed cid -> putStrLn "closed"
-            ConnectionOpened cid rel addr -> putStrLn (show addr) 
-            
+          printEvent e
+          e <- Network.Transport.receive endpoint
+          printEvent e
           putStrLn ""
