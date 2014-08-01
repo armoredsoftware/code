@@ -31,9 +31,14 @@ serverEnd oid = do vchan <- server_init oid
 closeT  = undefined
 --Unsure about the Connection ID if the client Id is sufficient
 receiveData :: Int -> LibXenVChan -> IO Event
-receiveData clientId chan = do logger <- createLogger
-                               str <-readChunkedMessageByteString logger chan 
-                               return $ Received (fromIntegral clientId) [str]
+receiveData clientId chan = do ready<- dataReady chan
+                               if ready < 0 then
+                                    do ctrlWait chan
+                                       receiveData clientId chan
+                               else
+                                 do logger <- createLogger
+                                    str <-readChunkedMessageByteString logger chan 
+                                    return $ Received (fromIntegral clientId) [str]
 
 sendData:: LibXenVChan -> [BS.ByteString] -> IO(Either (TransportError SendErrorCode)())
 sendData chan mesgs = do logger <- createLogger
@@ -62,13 +67,15 @@ prompt= loop
 main = do dom <- prompt
           transport <- mkTransport dom 
           Right endpoint  <- newEndPoint transport
-          Right connection <- connect endpoint (EndPointAddress (BSC.pack (show(dom)) )) ReliableOrdered defaultConnectHints 
-
-          Network.Transport.send connection [(BSC.pack "This will be ignored just signals to create the client init for the testReceive")]
-          Network.Transport.send connection [(BSC.pack "This is a test")]
+         -- Right connection <- connect endpoint (EndPointAddress (BSC.pack (show(dom)) )) ReliableOrdered defaultConnectHints 
+          putStrLn "Sending Message"
+         -- Network.Transport.send connection [(BSC.pack "This will be ignored just signals to create the client init for the testReceive")]
+         -- Network.Transport.send connection [(BSC.pack "This is a test")]
+          
           e <- Network.Transport.receive endpoint
           case e of
-            Received cid mesg ->  do let strings =  map (\m ->( BSC.unpack m)) mesg
+            Received cid mesg ->  do putStrLn "Received:"
+                                     let strings =  map (\m ->( BSC.unpack m)) mesg
                                      sequence_ $ map putStrLn strings 
             ConnectionClosed cid -> putStrLn "closed"
             ConnectionOpened cid rel addr -> putStrLn (show addr) 
