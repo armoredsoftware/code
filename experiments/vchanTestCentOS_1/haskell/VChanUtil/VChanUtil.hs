@@ -58,6 +58,12 @@ foreign import ccall unsafe "exp1Common.h xtl_logger_destroy"
 foreign import ccall unsafe "exp1Common.h createReceiveChanP"
     c_createReceiveChanP:: XenToolLogger -> CInt-> CString -> IO (LibXenVChan) 
 
+foreign import ccall unsafe "exp1Common.h client_init"
+    c_client_init:: XenToolLogger -> CInt-> IO (LibXenVChan) 
+
+foreign import ccall unsafe "exp1Common.h server_init"
+    c_server_init:: XenToolLogger -> CInt-> IO (LibXenVChan) 
+
 foreign import ccall unsafe "exp1Common.h createTransmitChanP"
     c_createTransmitChanP:: XenToolLogger -> CInt-> CInt-> CString -> IO (LibXenVChan) 
 
@@ -112,12 +118,13 @@ createMgrChan_Srv logger = do createSrvCtrlP logger 0 "data/mgrVchan"
 createMgrChan_Client :: XenToolLogger -> Int -> IO (LibXenVChan)
 createMgrChan_Client logger srvId = do createClientCtrlP logger srvId 0 "data/mgrVchan"
 
+--Deprecated
 --Create a VChan as a server for that clientId will later connect to 
 --Wrapper
 createSrvCtrl :: XenToolLogger -> Int-> IO (LibXenVChan)
 createSrvCtrl logger clientId = let path = "data/serverVchan"
                                  in  createSrvCtrlP logger clientId path
-
+--Deprecated
 --Underlying function used to create a Vchan as a Server
 createSrvCtrlP :: XenToolLogger -> Int-> String -> IO (LibXenVChan)
 createSrvCtrlP logger clientId p = do path <- newCString p 
@@ -126,13 +133,14 @@ createSrvCtrlP logger clientId p = do path <- newCString p
                                               path
                                       free path
                                       return ctrl
-
+--Deprecated
 --Client dom connects to an existing VChan in which the client has permission 
 createClientCtrl :: XenToolLogger -> Int -> IO (LibXenVChan)
 createClientCtrl logger srvId = do clientId <- getDomId
                                    let path = "data/serverVchan"
                                    createClientCtrlP logger srvId clientId path
 
+--Deprecated
 --Underlying function used to connect to a VChan as a Client
 createClientCtrlP :: XenToolLogger->Int->Int->String->IO (LibXenVChan)
 createClientCtrlP logger srvId clientId p = do path <- newCString p 
@@ -187,6 +195,7 @@ ctrlWait ctrl = liftM fromIntegral (c_libxenvchan_wait ctrl)
 
 ctrlClose :: LibXenVChan -> IO ()
 ctrlClose ctrl =c_libxenvchan_close ctrl
+
 
 --Returns the size of the data ready to be read from the VChan
 dataReady :: LibXenVChan -> IO Int
@@ -250,16 +259,16 @@ readChunkedMessageByteString logger vchan = do alloca $ \(size :: Ptr CInt) ->
 -- #################################################################################3
 client_init:: Int-> IO (LibXenVChan)
 client_init otherDom = do logger <- createLogger
-                          chan <-createClientCtrl logger otherDom
-                          destroyLogger logger
+                          chan <-c_client_init logger (fromIntegral otherDom :: CInt)
+ --                         destroyLogger logger
                           return chan
                            
                         
 
 server_init::Int-> IO (LibXenVChan)
 server_init otherDom = do logger <- createLogger
-                          chan <-createSrvCtrl logger otherDom
-                          destroyLogger logger
+                          chan <-c_server_init logger (fromIntegral otherDom :: CInt)
+                         -- destroyLogger logger
                           return chan
 
 send :: Binary e => LibXenVChan -> e -> IO(Int)
@@ -268,7 +277,7 @@ send chan packet = do let msg = LazyBS.toStrict $ compress $ encode packet
                       res <-BS.useAsCStringLen msg (\(message,sz)-> 
                              liftM fromIntegral $ c_sendChunkedMessage
                                  logger chan message (fromIntegral sz ::CInt))
-                      destroyLogger logger
+                      --destroyLogger logger
                       return res
 
 
@@ -279,7 +288,7 @@ receive chan = do logger <- createLogger
                    sz <- peek size
                    str <- BS.packCStringLen (ptr, fromIntegral sz:: Int)
                    free ptr
-                   destroyLogger logger
+--                   destroyLogger logger
                    return $ decode $ decompress $ LazyBS.fromStrict str
 close :: LibXenVChan -> IO ()
 close chan = ctrlClose chan

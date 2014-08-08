@@ -17,7 +17,58 @@
 #include <libxenvchan.h>
 #include <unistd.h>
 #include "exp1Common.h"
+#include "JVChanUtil.h"
 #include <sys/mman.h>
+
+JNIEXPORT jint JNICALL Java_JVChanUtil_getDomId (JNIEnv * env, jobject obj){
+   return getDomId();
+}
+
+JNIEXPORT jlong JNICALL Java_JVChanUtil_createLogger (JNIEnv *env , jobject obj){
+   xentoollog_logger_stdiostream * logger = createDebugLogger();
+   long *lp = (long *) logger;
+   return (jlong)lp;
+}
+
+JNIEXPORT jlong JNICALL Java_JVChanUtil_client_1init (JNIEnv *env, jobject obj, jlong jlogger, jint srvId){
+  xentoollog_logger *logger = (xentoollog_logger *) jlogger;
+  struct libxenvchan * chan = client_init(logger, (int)srvId);
+  long *lchan = (long *) chan;
+  return (jlong)chan;
+}
+
+JNIEXPORT jlong JNICALL Java_JVChanUtil_server_1init (JNIEnv *env, jobject obj, jlong jlogger, jint clientId){
+  xentoollog_logger *logger = (xentoollog_logger *) jlogger;
+  struct libxenvchan * chan = server_init(logger,(int)clientId);
+  long *lchan = (long *) chan;
+  return (jlong)chan;
+}
+
+JNIEXPORT jint JNICALL Java_JVChanUtil_sendChunkedMessage (JNIEnv *env, jobject obj, jlong jlogger, jlong jchan, jstring jmesg, jint jsize){
+  xentoollog_logger *logger = (xentoollog_logger *) jlogger;
+  struct libxenvchan * chan = (struct libxenvchan *) jchan;
+  char * mesg = (char *)(*env)->GetStringUTFChars(env, jmesg, 0);
+  int res = sendChunkedMessage(logger, chan, mesg,(int)jsize);
+
+  (*env)->ReleaseStringUTFChars(env, jmesg, mesg);
+  return res;
+  
+}
+
+JNIEXPORT jstring JNICALL Java_JVChanUtil_readChunkedMessage (JNIEnv *env, jobject obj, jlong jlogger, jlong jchan){
+  xentoollog_logger *logger = (xentoollog_logger *) jlogger;
+  struct libxenvchan * chan = (struct libxenvchan *) jchan;
+  int size = 0;
+  const char *bytes  = readChunkedMessage(logger,chan,&size); 
+  return (*env)->NewStringUTF(env, bytes);
+
+}
+
+ 
+JNIEXPORT void JNICALL Java_JVChanUtil_ctrlWait (JNIEnv *env, jobject obj, jlong jchan){
+  struct libxenvchan * chan = (struct libxenvchan *) jchan;
+  libxenvchan_wait(chan);
+}
 
 int getDomId(void){
   struct xs_handle   *handle= 0;
@@ -39,6 +90,7 @@ struct libxenvchan * client_init(xentoollog_logger * logger, int srvId){
 } 
 
 struct libxenvchan * server_init(xentoollog_logger *logger, int clientId){
+    int srvId = getDomId();
     return createReceiveChanP(logger, clientId, "data/serverVchan");
 }
 
@@ -48,59 +100,6 @@ xentoollog_logger_stdiostream * createDebugLogger(){
   return xtl_createlogger_stdiostream(stdout, XTL_DEBUG, 0);
 }
 
-
-/** Read the domainID of the subExp1 from the mgrExp1 over the
- * vChan.
- * This routine will block until the domainID is retrieved from 
- * the mgr.
- * return - the domainID. On any failure exit(1) is called.
- **/
-int readSubExp1DomainID( xentoollog_logger * xc_logger, struct libxenvchan * ctrl) {
-  char buf[DOMAIN_ID_CHAR_LEN + 1];
-  int size = DOMAIN_ID_CHAR_LEN;
-  char * invalidChar;
-  int domainID;
-
-  // Read the subExp1 domain ID from mgrExp1 vchan client.
-  // The domainID has to be right justified for the following error
-  // checking to work. So the domainID number must be preceeded with
-  // white space or '0's.
-  size = libxenvchan_recv(ctrl, buf, size);
-
-  // Was there a system error?
-  if (size < 0) {
-    // There was a significant error. Abort.
-    fprintf(stderr, "libxenvchan_read return=%d.\n", size);
-    perror("readSubDomain: read failed for mgrExp1.");
-    fprintf(stderr, "Closing\n");
-    libxenvchan_close(ctrl);
-    exit(1);
-  }
-
-  // Did we get all of the characters of the domainID number string?
-  if (size != DOMAIN_ID_CHAR_LEN) {
-    fprintf(stderr, "readSubDomain: We expected to read %d characters for the"
-	    "subExp1 domain ID but got %d from mgrExp1\n",
-	    DOMAIN_ID_CHAR_LEN, size);
-    fprintf(stderr, "Closing\n");
-    libxenvchan_close(ctrl);
-    exit(1);
-  }
-
-  buf[DOMAIN_ID_CHAR_LEN] = 0; // put null at end of string so we have a valid C string.
-  // Convert the string to an integer.
-  domainID = strtol(buf, &invalidChar, 10);
-
-  if ( *invalidChar != '\0' ) {
-    fprintf(stderr, "readSubDomain: There was an invalid character in the domainID. The invalid portion of the domainID is '%s'.\n", invalidChar);
-    fprintf(stderr, "Closing\n");
-    libxenvchan_close(ctrl);
-    exit(1);
-    
-  }
-
-  return domainID;
-}
 //####################################################################
 
 struct libxenvchan * createReceiveChan (xentoollog_logger * xc_logger, int id){
@@ -183,91 +182,6 @@ struct libxenvchan * createTransmitChanP(xentoollog_logger * xc_logger, int dest
 
 return txCtrl;
 
-}
-
-
-/*
-// ###################################################################
-// Get a count from a server over a vchan.
-// xc_logger - may be null
-// rxCtrl - vchan control structure created by call to libxenvchan_server_init
-// servCount - the msg count read from the vchan server.
-// return - non 0 is an error.
-int receiveCountFromServer(xentoollog_logger * xc_logger,
-			   struct libxenvchan * rxCtrl,  int * servCount) {
-  int result = 0;
-  char buf[256];
-  int size;
-  char * invalidChar;
-
-  size = EXP1_MSG_LEN;
-
-  // Read the correct number of characters from the server.
-  size = libxenvchan_read(rxCtrl, buf, size);
-
-  // Was there a system error?
-  if (size < 0) {
-    // There was a significant error. Abort.
-    fprintf(stderr, "libxenvchan_read return=%d.\n", size);
-    perror("clientExp1: read failed for serverExp1.");
-    exit(1);
-  }
-
-  // Did we get all of the characters in the message.
-  if (size != EXP1_MSG_LEN) {
-    fprintf(stderr, "clientExp1: We expected to read %d characters for the"
-	    "serverExp1 but got %d from serverExp1\n",
-	    EXP1_MSG_LEN, size);
-    exit(1);
-  }
-
-  buf[EXP1_MSG_LEN] = 0; // put null at end of string so we have a valid C string.
-  // Convert the string to an integer.
-  *servCount = strtol(buf, &invalidChar, 10);
-
-  if ( *invalidChar != '\0' ) {
-    fprintf(stderr, "clientExp1: There was an invalid character in the msg Count. The invalid portion of the msg count is '%s'.\n", invalidChar);
-    exit(1);
-    
-  }
-
-  return result;
-}
-*/
-// ##################################################################
-// Send a count to server over a vchan.
-// xc_logger - may be null
-// txCtrl - vchan control structure created by call to libxenvchan_server_init
-// clientCount - the msg count write to  the vchan server.
-// return - non 0 is an error.
-int sendClientResponse(xentoollog_logger * xc_logger, struct libxenvchan * txCtrl,
-		       int clientCount) {
-  int result = 0;
-  int writeSize;
-  char buf[EXP1_MSG_LEN + 1];
-  char fmt[256];
-
-  // Create the format for writing the message. 
-  // This really should be done once during initialization
-  sprintf(fmt, "%% %dd", EXP1_MSG_LEN); 
-
-  sprintf(buf, fmt, clientCount);
-
-  writeSize = libxenvchan_write(txCtrl, buf, EXP1_MSG_LEN);
-  if (writeSize < 0) {
-    perror("vchan to serverExp1 write");
-    exit(1);
-  }
-  if (writeSize == 0) {
-    perror("write serverExp1 size=0?");
-    exit(1);
-  }
-  if (writeSize != EXP1_MSG_LEN) {
-    perror("write writeExp1 failed to write whole buffer.");
-    exit(1);
-  }
-
-  return result;
 }
 
 //####################################################################
@@ -640,114 +554,7 @@ char * readChunkedMessage(xentoollog_logger *xc_logger, struct libxenvchan *ctrl
 }
 
 //####################################################################
-int readClientMessage(xentoollog_logger * xc_logger, struct libxenvchan * ctrl,
-                        char * msg, int * sz) {
-  int result = 0;
-  int size;
-  //char * invalidChar;
-  //char * buf = (char *) malloc (sizeof(char) * (*sz));
-  //int i = 0;
-/*
-  fprintf(stdout,"size:%d\n", *sz);
-*/  
-  size = libxenvchan_recv(ctrl, msg, *sz);
-/*
-  fprintf(stdout,"Receive strlen: %d\n",size);
-  fprintf(stdout,"%s",msg);
-  fprintf(stdout,"HEXDUMP\n");
-  for (i = 0; i < size; i++){
-   fprintf(stdout,"%02x ",msg[i]);
-  }
-   fprintf(stdout,"\n");
-*/
-  *sz = size;
-  // Was there a system error?
-  if (size < 0) {
-    // There was a significant error. Abort.
-    fprintf(stderr, "libxenvchan_recv return=%d.\n", size);
-    perror("serverExp1: read failed for clientExp1.");
-    exit(1);
-  }
-  /*
-  // Did we get all of the characters in the message.
-  if (size != EXP1_MSG_LEN) {
-    fprintf(stderr, "serverExp1: We expected to read %d characters for the"
-            "clientExp1 but got %d from clientExp1\n",
-            EXP1_MSG_LEN, size);
-    exit(1);
-  }
-*/
-//  msg[size] = 0; // put null at end of string so we have a valid C string.
-  // Convert the string to an integer.
-  return result;
-}
 
-//####################################################################
-
-int checkClientResponse(xentoollog_logger * xc_logger, struct libxenvchan * ctrl,
-                        int * count) {
-  int result = 0;
-  int size;
-  char buf[256];
-  char * invalidChar;
-
-  size = EXP1_MSG_LEN;
-
-  size = libxenvchan_read(ctrl, buf, size);
-
-  // Was there a system error?
-  if (size < 0) {
-    // There was a significant error. Abort.
-    fprintf(stderr, "libxenvchan_read return=%d.\n", size);
-    perror("serverExp1: read failed for clientExp1.");
-    exit(1);
-  }
-
-  // Did we get all of the characters in the message.
-  if (size != EXP1_MSG_LEN) {
-    fprintf(stderr, "serverExp1: We expected to read %d characters for the"
-            "clientExp1 but got %d from clientExp1\n",
-            EXP1_MSG_LEN, size);
-    exit(1);
-  }
-
-  buf[EXP1_MSG_LEN] = 0; // put null at end of string so we have a valid C string.
-  // Convert the string to an integer.
-  *count = strtol(buf, &invalidChar, 10);
-
-  if ( *invalidChar != '\0' ) {
-    fprintf(stderr, "serverExp1: There was an invalid character in the msg count. The invalid portion of the msg count is '%s'.\n", invalidChar);
-    exit(1);
-
-  }
-
-  return result;
-}
-//Simple Functions
-//####################################################################
-/*
-struct libxenvchan * client_init (int serverId){
-  xentoollog_logger_stdiostream * logger =  createDebugLogger();
-  int clientId = getDomId();
-  struct libxenvchan * chan  =createTransmitChanP((xentoollog_logger *)logger, serverId, clientId, "data/serverVchan");
-  
-  xtl_logger_destroy((xentoollog_logger *)logger);
-
-  return chan;
-}
-
-//####################################################################
-
-struct libxenvchan * server_init (int clientId){
-  xentoollog_logger_stdiostream * logger =  createDebugLogger();
-  struct libxenvchan * chan  =createReceiveChanP((xentoollog_logger *)logger, clientId, "data/serverVchan");
-
-  xtl_logger_destroy((xentoollog_logger *)logger);
-
-  return chan;
-}
-*/
-//####################################################################
 
 int send(struct libxenvchan * chan, char * message, int size){
   xentoollog_logger_stdiostream * logger =  createDebugLogger();

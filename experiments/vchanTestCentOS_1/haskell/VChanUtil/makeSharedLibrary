@@ -1,0 +1,14 @@
+#!/bin/bash
+if [ "$1" == "all" ]; then
+  javac JVChanUtil.java
+  javah -jni JVChanUtil
+  gcc -shared -fpic -o libJVChanUtil.so -I/usr/lib/jvm/java/include -I/usr/lib/jvm/java/include/linux -lxenvchan -lxenctrl JNI_common.c
+elif [ "$1" == "java" ]; then
+   javac JVChanUtil.java
+   javah -jni JVChanUtil
+elif [ "$1" == "jh" ]; then
+   javac JVChanUtil.java
+   javah -jni JVChanUtil
+   vi JVChanUtil.h
+fi
+
