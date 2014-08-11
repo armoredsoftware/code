@@ -147,6 +147,7 @@ public class FakeJavaMeasurer {
 		JSONObject jObj = null;
 
 		try {
+			System.out.println("I am about to parse this: "+ jsonStr + " as"+ class1);
 			obj = parser.parse(jsonStr);
 			System.out.println(obj);
 			jObj = (JSONObject) obj;
