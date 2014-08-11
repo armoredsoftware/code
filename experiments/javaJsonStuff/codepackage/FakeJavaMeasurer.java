@@ -5,6 +5,7 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.List;
+import java.util.Scanner;
 
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -19,7 +20,7 @@ public class FakeJavaMeasurer {
 	public static String edFile = "haskell_out_evidenceDescriptorW";
 	public static String epFile = "haskell_out_evidencePiece";
 
-	public static void fakeJavaMeasurerMain(String jsonmessage) {
+	public static void main(String[] args) {
 
 		// String deStr = getContents(deFile).trim();
 		// String edStr = getContents(edFile).trim();
@@ -31,6 +32,44 @@ public class FakeJavaMeasurer {
 		// System.out.println("epFile: " + epStr);
 		// }
 		// DesiredEvidence de = jsonDecode(deStr, DesiredEvidence.class);
+		
+		
+		Scanner in = new Scanner(System.in);
+	     JVChanUtil vchanUtil = new JVChanUtil();
+	     System.out.println("Dom ID: "+ vchanUtil.getDomId());
+	    // System.out.println("Server (1) or Client (0):");
+	    // int srv = in.nextInt();
+	     int srv =1;
+	     
+	     System.out.println("Enter a Dom ID: ");
+	     int val = in.nextInt();
+	     long logger = vchanUtil.createLogger();
+	     long chan;
+	     if ( srv == 1){
+	       chan = vchanUtil.server_init(logger,val);
+	     }else{
+	       chan = vchanUtil.client_init(logger, val);
+	       String mesg = "Testing vchan JNI";
+	       System.out.println("Sending: "+mesg);
+	       vchanUtil.sendChunkedMessage(logger,chan,mesg,mesg.length()); 
+	     }
+	        if (srv == 1){
+	           vchanUtil.ctrlWait(chan);
+	           String message = vchanUtil.readChunkedMessage(logger,chan);
+	           System.out.println("Received: "+message);   
+	           processReceivedMessage(message);
+	        }
+		
+		
+		
+		
+		
+		
+	}
+
+	private static void processReceivedMessage(String jsonmessage) {
+
+		
 		EvidenceDescriptor ed = generaljsonDecode(jsonmessage);// (jsonmessage,
 		System.out.println("Here is the evidenceDescriptor: " + ed.getEvidenceDescriptor());
 		// EvidenceDescriptor.class);
@@ -59,6 +98,7 @@ public class FakeJavaMeasurer {
 		// System.out.println(jsonEncode(ed,
 		// DesiredEvidence.class).toJSONString());
 
+		
 	}
 
 	private static <T> T generaljsonDecode(String jsonString) {
