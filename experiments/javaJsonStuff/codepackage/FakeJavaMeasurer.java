@@ -130,8 +130,9 @@ public class FakeJavaMeasurer {
 				return (T) jsonDecode(unwrappedjsonStringObj, EvidencePiece.class);
 			} else if (jObj.get("tag").toString()
 					.compareTo("EvidenceDescriptorW") == 0) {
-				unwrappedjsonStringObj = jObj.get("getEvidenceDescriptor").toString();
-				return (T) jsonDecode(unwrappedjsonStringObj, EvidenceDescriptor.class);
+				//unwrappedjsonStringObj = jObj.get("getEvidenceDescriptor").toString();
+				//too much unwrapping. trying without unwrapping
+				return (T) jsonDecode(jsonString, EvidenceDescriptor.class);
 			}
 
 		} catch (ParseException e) {
@@ -147,7 +148,7 @@ public class FakeJavaMeasurer {
 		JSONObject jObj = null;
 
 		try {
-			System.out.println("I am about to parse this: "+ jsonStr + " as"+ class1);
+			System.out.println("I am about to parse this: "+ jsonStr + " as "+ class1);
 			obj = parser.parse(jsonStr);
 			System.out.println(obj);
 			jObj = (JSONObject) obj;
