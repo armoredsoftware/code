@@ -35,7 +35,9 @@ public class JVChanUtil {
      }
         if (srv == 1){
            vchanUtil.ctrlWait(chan);
-           System.out.println("Received: "+vchanUtil.readChunkedMessage(logger,chan));       
+           String message = vchanUtil.readChunkedMessage(logger,chan);
+           System.out.println("Received: "+message);   
+           
         }
     }
 

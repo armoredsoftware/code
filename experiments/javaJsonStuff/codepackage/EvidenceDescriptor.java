@@ -8,7 +8,7 @@ public class EvidenceDescriptor{
    	private String evidenceDescriptor;
 
  	public EvidenceDescriptor(JSONObject jObj) {
-		setEvidenceDescriptor((String)jObj.get("evidenceDescriptor"));
+		setEvidenceDescriptor(jObj.toString());//.get("evidenceDescriptor"));
 	}
 	public String getEvidenceDescriptor(){
 		return this.evidenceDescriptor;
