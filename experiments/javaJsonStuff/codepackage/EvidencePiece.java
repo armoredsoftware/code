@@ -23,6 +23,9 @@ public class EvidencePiece{
 		//setM0Rep();
 		
 	}
+ 	public EvidencePiece(long[] data){
+ 		m0Rep=data;
+ 	}
 	public long[] getM0Rep(){
 		return this.m0Rep;
 	}

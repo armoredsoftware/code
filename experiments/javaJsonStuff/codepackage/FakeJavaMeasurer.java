@@ -20,6 +20,8 @@ public class FakeJavaMeasurer {
 	public static String edFile = "haskell_out_evidenceDescriptorW";
 	public static String epFile = "haskell_out_evidencePiece";
 
+	public static int chan_val;
+
 	public static void main(String args[]) {
 
 		// String deStr = getContents(deFile).trim();
@@ -32,59 +34,68 @@ public class FakeJavaMeasurer {
 		// System.out.println("epFile: " + epStr);
 		// }
 		// DesiredEvidence de = jsonDecode(deStr, DesiredEvidence.class);
-		
-		
+
 		Scanner in = new Scanner(System.in);
-	     JVChanUtil vchanUtil = new JVChanUtil();
-	     System.out.println("Dom ID: "+ vchanUtil.getDomId());
-	    // System.out.println("Server (1) or Client (0):");
-	    // int srv = in.nextInt();
-	     int srv =1;
-	     
-	     System.out.println("Enter a Dom ID: ");
-	     int val = in.nextInt();
-	     long logger = vchanUtil.createLogger();
-	     long chan;
-	     if ( srv == 1){
-	       chan = vchanUtil.server_init(logger,val);
-	     }else{
-	       chan = vchanUtil.client_init(logger, val);
-	       String mesg = "Testing vchan JNI";
-	       System.out.println("Sending: "+mesg);
-	       vchanUtil.sendChunkedMessage(logger,chan,mesg,mesg.length()); 
-	     }
-	        if (srv == 1){
-	           vchanUtil.ctrlWait(chan);
-	           
-	           String message = vchanUtil.readChunkedMessage(logger,chan);
-	           //test to discard null character
-	           message = cStringToJavaString(message);
-	           System.out.println("Received: "+message);   
-	           processReceivedMessage(message);
-	        }
-		
-		
-		
-		
-		
-		
+		JVChanUtil vchanUtil = new JVChanUtil();
+		System.out.println("Dom ID: " + vchanUtil.getDomId());
+		// System.out.println("Server (1) or Client (0):");
+		// int srv = in.nextInt();
+		int srv = 1;
+
+		System.out.println("Enter a Dom ID: ");
+		chan_val = in.nextInt();
+		long logger = vchanUtil.createLogger();
+		long chan;
+		if (srv == 1) {
+			chan = vchanUtil.server_init(logger, chan_val);
+		} else {
+			chan = vchanUtil.client_init(logger, chan_val);
+			String mesg = "Testing vchan JNI";
+			System.out.println("Sending: " + mesg);
+			vchanUtil.sendChunkedMessage(logger, chan, mesg, mesg.length());
+		}
+		if (srv == 1) {
+			while (true) {
+				vchanUtil.ctrlWait(chan);
+
+				String message = vchanUtil.readChunkedMessage(logger, chan);
+				// test to discard null character
+				message = cStringToJavaString(message);
+				System.out.println("Received: " + message);
+				processReceivedMessage(message);
+			}
+
+		}
+
 	}
 
 	private static String cStringToJavaString(String message) {
-		char[] chars= message.toCharArray();
-		char[] result= new char[chars.length];
-		
+		char[] chars = message.toCharArray();
+		char[] result = new char[chars.length];
+
 		for (int i = 0; i < chars.length; i++) {
-			result[i]=chars[i];
+			result[i] = chars[i];
 		}
 		return new String(result);
 	}
 
 	private static void processReceivedMessage(String jsonmessage) {
 
-		
 		EvidenceDescriptor ed = generaljsonDecode(jsonmessage);// (jsonmessage,
-		System.out.println("Here is the evidenceDescriptor: " + ed.getEvidenceDescriptor());
+		System.out.println("Here is the evidenceDescriptor: "
+				+ ed.getEvidenceDescriptor());
+		EvidencePiece response = null;
+		if (ed.getEvidenceDescriptor().compareTo("D0") == 0) {
+			response = new EvidencePiece(new long[] { 0 });
+
+		} else if (ed.getEvidenceDescriptor().compareTo("D1") == 0) {
+			response = new EvidencePiece(new long[] { 0, 1 });
+
+		} else if (ed.getEvidenceDescriptor().compareTo("D2") == 0) {
+			response = new EvidencePiece(new long[] { 0, 1, 2 });
+
+		}
+		send(response);
 		// EvidenceDescriptor.class);
 		// EvidencePiece ep = jsonDecode(epStr, EvidencePiece.class);
 		// if (verbose) {
@@ -96,22 +107,34 @@ public class FakeJavaMeasurer {
 		// System.out.println(ep.getTag());
 		// System.out.println(ep.getM0Rep());
 		// }
-//		System.out.println("encoding:");
-//		String deStr2 = jsonEncode(de, DesiredEvidence.class).toJSONString();
-//		System.out
-//				.println(deStr2 + " match: " + (deStr2.compareTo(deStr) == 0));
-//
-//		System.out.println("here is the generic read of evidencePieceW:");
-//		System.out.println(getContents("haskell_out_evidencePieceW").trim());
-//		EvidencePiece ep2 = generaljsonDecode(getContents(
-//				"haskell_out_evidencePieceW").trim());
-//		System.out.println(ep2.jsonEncode());
+		// System.out.println("encoding:");
+		// String deStr2 = jsonEncode(de, DesiredEvidence.class).toJSONString();
+		// System.out
+		// .println(deStr2 + " match: " + (deStr2.compareTo(deStr) == 0));
+		//
+		// System.out.println("here is the generic read of evidencePieceW:");
+		// System.out.println(getContents("haskell_out_evidencePieceW").trim());
+		// EvidencePiece ep2 = generaljsonDecode(getContents(
+		// "haskell_out_evidencePieceW").trim());
+		// System.out.println(ep2.jsonEncode());
 		//
 		// System.out.println("encoding fail test:");
 		// System.out.println(jsonEncode(ed,
 		// DesiredEvidence.class).toJSONString());
 
-		
+	}
+
+	private static void send(EvidencePiece response) {
+		JVChanUtil vchanUtil = new JVChanUtil();
+		long logger = vchanUtil.createLogger();
+		long chan;
+
+		chan = vchanUtil.client_init(logger, chan_val);
+		JSONObject jsonObj = response.jsonEncode();
+		String mesg = jsonObj.toJSONString();
+		System.out.println("Sending: " + mesg);
+		vchanUtil.sendChunkedMessage(logger, chan, mesg, mesg.length());
+
 	}
 
 	private static <T> T generaljsonDecode(String jsonString) {
@@ -124,14 +147,17 @@ public class FakeJavaMeasurer {
 			System.out.println(obj);
 			jObj = (JSONObject) obj;
 
-			String unwrappedjsonStringObj="";
+			String unwrappedjsonStringObj = "";
 			if (jObj.get("tag").toString().compareTo("EvidencePieceW") == 0) {
-				unwrappedjsonStringObj = jObj.get("getEvidencePiece").toString();
-				return (T) jsonDecode(unwrappedjsonStringObj, EvidencePiece.class);
+				unwrappedjsonStringObj = jObj.get("getEvidencePiece")
+						.toString();
+				return (T) jsonDecode(unwrappedjsonStringObj,
+						EvidencePiece.class);
 			} else if (jObj.get("tag").toString()
 					.compareTo("EvidenceDescriptorW") == 0) {
-				//unwrappedjsonStringObj = jObj.get("getEvidenceDescriptor").toString();
-				//too much unwrapping. trying without unwrapping
+				// unwrappedjsonStringObj =
+				// jObj.get("getEvidenceDescriptor").toString();
+				// too much unwrapping. trying without unwrapping
 				return (T) jsonDecode(jsonString, EvidenceDescriptor.class);
 			}
 
@@ -148,7 +174,8 @@ public class FakeJavaMeasurer {
 		JSONObject jObj = null;
 
 		try {
-			System.out.println("I am about to parse this: "+ jsonStr + " as "+ class1);
+			System.out.println("I am about to parse this: " + jsonStr + " as "
+					+ class1);
 			obj = parser.parse(jsonStr);
 			System.out.println(obj);
 			jObj = (JSONObject) obj;
@@ -171,7 +198,8 @@ public class FakeJavaMeasurer {
 
 		// case EvidenceDescriptor
 		if (class1 == EvidenceDescriptor.class) {
-			EvidenceDescriptor ed = new EvidenceDescriptor(jObj.get("getEvidenceDescriptor").toString());
+			EvidenceDescriptor ed = new EvidenceDescriptor(jObj
+					.get("getEvidenceDescriptor").toString().trim());
 			return (T) ed;
 		}
 
@@ -219,32 +247,32 @@ public class FakeJavaMeasurer {
 
 	}
 
-//	private static String getContents(String fname) {
-//
-//		try {
-//			BufferedReader br = new BufferedReader(new FileReader(prefix
-//					+ fname));
-//
-//			StringBuilder sb = new StringBuilder();
-//			String line = br.readLine();
-//
-//			while (line != null) {
-//				sb.append(line);
-//				sb.append(System.lineSeparator());
-//				line = br.readLine();
-//			}
-//
-//			br.close();
-//			return sb.toString();
-//		} catch (FileNotFoundException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		} catch (IOException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
-//		return "";
-//
-//	}
+	// private static String getContents(String fname) {
+	//
+	// try {
+	// BufferedReader br = new BufferedReader(new FileReader(prefix
+	// + fname));
+	//
+	// StringBuilder sb = new StringBuilder();
+	// String line = br.readLine();
+	//
+	// while (line != null) {
+	// sb.append(line);
+	// sb.append(System.lineSeparator());
+	// line = br.readLine();
+	// }
+	//
+	// br.close();
+	// return sb.toString();
+	// } catch (FileNotFoundException e) {
+	// // TODO Auto-generated catch block
+	// e.printStackTrace();
+	// } catch (IOException e) {
+	// // TODO Auto-generated catch block
+	// e.printStackTrace();
+	// }
+	// return "";
+	//
+	// }
 
 }
