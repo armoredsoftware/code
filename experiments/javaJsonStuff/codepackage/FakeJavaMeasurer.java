@@ -131,10 +131,11 @@ public class FakeJavaMeasurer {
 		long chan;
 
 		System.out.println("about to send message this is chan_val:" + chan_val);
-		chan = vchanUtil.client_init(logger, chan_val);
 		JSONObject jsonObj = response.jsonEncode();
 		String mesg = jsonObj.toJSONString();
 		System.out.println("Sending: " + mesg);
+		chan = vchanUtil.client_init(logger, chan_val);
+		
 		vchanUtil.sendChunkedMessage(logger, chan, mesg, mesg.length());
 
 	}
