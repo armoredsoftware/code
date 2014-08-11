@@ -20,7 +20,7 @@ public class FakeJavaMeasurer {
 	public static String edFile = "haskell_out_evidenceDescriptorW";
 	public static String epFile = "haskell_out_evidencePiece";
 
-	public static void main(String[] args) {
+	public static void main(String args[]) {
 
 		// String deStr = getContents(deFile).trim();
 		// String edStr = getContents(edFile).trim();
@@ -55,7 +55,10 @@ public class FakeJavaMeasurer {
 	     }
 	        if (srv == 1){
 	           vchanUtil.ctrlWait(chan);
+	           
 	           String message = vchanUtil.readChunkedMessage(logger,chan);
+	           //test to discard null character
+	           message = cStringToJavaString(message);
 	           System.out.println("Received: "+message);   
 	           processReceivedMessage(message);
 	        }
@@ -65,6 +68,16 @@ public class FakeJavaMeasurer {
 		
 		
 		
+	}
+
+	private static String cStringToJavaString(String message) {
+		char[] chars= message.toCharArray();
+		char[] result= new char[chars.length-1];
+		
+		for (int i = 0; i < chars.length-1; i++) {
+			result[i]=chars[i];
+		}
+		return result.toString();
 	}
 
 	private static void processReceivedMessage(String jsonmessage) {
