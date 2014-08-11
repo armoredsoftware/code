@@ -7,8 +7,8 @@ import org.json.simple.JSONObject;
 public class EvidenceDescriptor{
    	private String evidenceDescriptor;
 
- 	public EvidenceDescriptor(JSONObject jObj) {
-		setEvidenceDescriptor(jObj.toString());//.get("evidenceDescriptor"));
+ 	public EvidenceDescriptor(Object string) {
+		setEvidenceDescriptor(string.toString());//.get("evidenceDescriptor"));
 	}
 	public String getEvidenceDescriptor(){
 		return this.evidenceDescriptor;
