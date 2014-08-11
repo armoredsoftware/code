@@ -12,7 +12,7 @@ public class EvidencePiece{
  	public EvidencePiece(JSONObject jObj) {
 		setTag((String)(jObj.get("tag")));
 
-		List lst = (List)jObj.get("m0Rep_EvidencePiece");
+		List<Long> lst = (List<Long>)jObj.get("m0Rep_EvidencePiece");
 		if (lst == null) {
 			lst = (List)jObj.get("m0Rep");
 		}
