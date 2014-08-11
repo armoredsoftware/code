@@ -171,7 +171,7 @@ public class FakeJavaMeasurer {
 
 		// case EvidenceDescriptor
 		if (class1 == EvidenceDescriptor.class) {
-			EvidenceDescriptor ed = new EvidenceDescriptor(jObj.get("getEvidenceDescriptor"));
+			EvidenceDescriptor ed = new EvidenceDescriptor(jObj.get("getEvidenceDescriptor").toString());
 			return (T) ed;
 		}
 
