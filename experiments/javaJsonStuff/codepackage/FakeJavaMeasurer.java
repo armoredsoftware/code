@@ -77,7 +77,7 @@ public class FakeJavaMeasurer {
 		for (int i = 0; i < chars.length-1; i++) {
 			result[i]=chars[i];
 		}
-		return result.toString();
+		return new String(result);
 	}
 
 	private static void processReceivedMessage(String jsonmessage) {
