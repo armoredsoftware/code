@@ -58,7 +58,7 @@ public class FakeJavaMeasurer {
 	           
 	           String message = vchanUtil.readChunkedMessage(logger,chan);
 	           //test to discard null character
-	           message = cStringToJavaString(message);
+	           message = new String(message.toCharArray());//cStringToJavaString(message);
 	           System.out.println("Received: "+message);   
 	           processReceivedMessage(message);
 	        }
