@@ -56,6 +56,7 @@ public class FakeJavaMeasurer {
 		}
 		if (srv == 1) {
 			while (true) {
+				chan = vchanUtil.server_init(logger, chan_val);//this go here??
 				vchanUtil.ctrlWait(chan);
 
 				String message = vchanUtil.readChunkedMessage(logger, chan);
@@ -129,6 +130,7 @@ public class FakeJavaMeasurer {
 		long logger = vchanUtil.createLogger();
 		long chan;
 
+		System.out.println("about to send message this is chan_val:" + chan_val);
 		chan = vchanUtil.client_init(logger, chan_val);
 		JSONObject jsonObj = response.jsonEncode();
 		String mesg = jsonObj.toJSONString();
