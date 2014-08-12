@@ -23,8 +23,10 @@ public class EvidencePiece{
 		//setM0Rep();
 		
 	}
- 	public EvidencePiece(long[] data){
+ 	public EvidencePiece(long[] data, String constructor){
  		m0Rep=data;
+ 		tag=constructor;
+ 		
  	}
 	public long[] getM0Rep(){
 		return this.m0Rep;

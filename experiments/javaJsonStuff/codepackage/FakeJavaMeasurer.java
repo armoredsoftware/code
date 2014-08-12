@@ -61,10 +61,10 @@ public class FakeJavaMeasurer {
 
 				String message = vchanUtil.readChunkedMessage(logger, chan);
 				// test to discard null character
-			//	message = cStringToJavaString(message);
+				message = cStringToJavaString(message);
 				System.out.println("Received: " + message);
 				processReceivedMessage(message, chan);
-			}
+			}  
 
 		}
 
@@ -87,13 +87,13 @@ public class FakeJavaMeasurer {
 				+ ed.getEvidenceDescriptor());
 		EvidencePiece response = null;
 		if (ed.getEvidenceDescriptor().compareTo("D0") == 0) {
-			response = new EvidencePiece(new long[] { 0 });
+			response = new EvidencePiece(new long[] { 0 }, "M0");
 
 		} else if (ed.getEvidenceDescriptor().compareTo("D1") == 0) {
-			response = new EvidencePiece(new long[] { 0, 1 });
+			response = new EvidencePiece(new long[] { 0, 1 }, "M1");
 
 		} else if (ed.getEvidenceDescriptor().compareTo("D2") == 0) {
-			response = new EvidencePiece(new long[] { 0, 1, 2 });
+			response = new EvidencePiece(new long[] { 0, 1, 2 },"M2");
 
 		}
 		send(response, chan);
