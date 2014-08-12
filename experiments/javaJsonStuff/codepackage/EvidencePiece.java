@@ -39,6 +39,7 @@ public class EvidencePiece {
 	public EvidencePiece(long[] data, String constructor) {
 		mRep = data;
 		tag = constructor;
+		mReptag= chooseRepTag(tag);
 
 	}
 
