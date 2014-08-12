@@ -48,6 +48,7 @@ public class FakeJavaMeasurer {
 		long chan;
 		if (srv == 1) {
 			chan = vchanUtil.server_init(logger, chan_val);
+			
 		} else {
 			chan = vchanUtil.client_init(logger, chan_val);
 			String mesg = "Testing vchan JNI";
@@ -63,7 +64,7 @@ public class FakeJavaMeasurer {
 				// test to discard null character
 				message = cStringToJavaString(message);
 				System.out.println("Received: " + message);
-				processReceivedMessage(message);
+				processReceivedMessage(message, chan);
 			}
 
 		}
@@ -80,7 +81,7 @@ public class FakeJavaMeasurer {
 		return new String(result);
 	}
 
-	private static void processReceivedMessage(String jsonmessage) {
+	private static void processReceivedMessage(String jsonmessage, long chan) {
 
 		EvidenceDescriptor ed = generaljsonDecode(jsonmessage);// (jsonmessage,
 		System.out.println("Here is the evidenceDescriptor: "
@@ -96,7 +97,7 @@ public class FakeJavaMeasurer {
 			response = new EvidencePiece(new long[] { 0, 1, 2 });
 
 		}
-		send(response);
+		send(response, chan);
 		// EvidenceDescriptor.class);
 		// EvidencePiece ep = jsonDecode(epStr, EvidencePiece.class);
 		// if (verbose) {
@@ -125,16 +126,16 @@ public class FakeJavaMeasurer {
 
 	}
 
-	private static void send(EvidencePiece response) {
+	private static void send(EvidencePiece response, long chan) {
 		JVChanUtil vchanUtil = new JVChanUtil();
 		long logger = vchanUtil.createLogger();
-		long chan;
+//		long chan;
 
 		System.out.println("about to send message this is chan_val:" + chan_val);
 		JSONObject jsonObj = response.jsonEncode();
 		String mesg = jsonObj.toJSONString();
 		System.out.println("Sending: " + mesg);
-		chan = vchanUtil.client_init(logger, chan_val);
+//		chan = vchanUtil.client_init(logger, chan_val);
 		
 		vchanUtil.sendChunkedMessage(logger, chan, mesg, mesg.length());
 

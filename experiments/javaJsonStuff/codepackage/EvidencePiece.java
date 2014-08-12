@@ -46,6 +46,7 @@ public class EvidencePiece{
 		for (int i = 0; i < m0Rep.length; i++) {
 			jarray.add(m0Rep[i]);
 		}
+		
 		jObj.put("m0Rep_EvidencePiece",jarray);
 		JSONObject wrapper = new JSONObject();
 		wrapper.put("tag", "EvidencePieceW");
