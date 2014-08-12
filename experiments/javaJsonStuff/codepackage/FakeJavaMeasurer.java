@@ -66,6 +66,7 @@ public class FakeJavaMeasurer {
 				System.out.println("Received: " + message);
 				System.out.println("Received (trimmed): " + message.trim());
 				message = justJSON(message);
+				System.out.println("justJSON(message)=" + message);
 				processReceivedMessage(message, chan);
 			}  
 
