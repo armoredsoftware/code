@@ -13,14 +13,7 @@ public class EvidencePiece {
 	public EvidencePiece(JSONObject jObj) {
 		setTag((String) (jObj.get("tag")));
 		List<Long> lst=null;
-		if (tag.compareTo("M0") == 0) {
-			mReptag="m0Rep_EvidencePiece";
-			
-		}else if (tag.compareTo("M1") == 0) {
-			mReptag="m1Rep_EvidencePiece";
-		}else if (tag.compareTo("M2") == 0) {
-			mReptag="m2Rep_EvidencePiece";
-		}
+		mReptag= chooseRepTag(tag);
 		
 		lst = (List<Long>) jObj.get(mReptag);
 		mRep = new long[lst.size()];
@@ -29,6 +22,18 @@ public class EvidencePiece {
 		}
 		// setM0Rep();
 
+	}
+
+	private String chooseRepTag(String tag_) {
+		if (tag_.compareTo("M0") == 0) {
+			return "m0Rep_EvidencePiece";
+			
+		}else if (tag_.compareTo("M1") == 0) {
+			return "m1Rep_EvidencePiece";
+		}else if (tag_.compareTo("M2") == 0) {
+			return "m2Rep_EvidencePiece";
+		}
+		return null;
 	}
 
 	public EvidencePiece(long[] data, String constructor) {
