@@ -57,12 +57,11 @@ public class FakeJavaMeasurer {
 		}
 		if (srv == 1) {
 			while (true) {
-				chan = vchanUtil.server_init(logger, chan_val);//this go here??
 				vchanUtil.ctrlWait(chan);
 
 				String message = vchanUtil.readChunkedMessage(logger, chan);
 				// test to discard null character
-				message = cStringToJavaString(message);
+			//	message = cStringToJavaString(message);
 				System.out.println("Received: " + message);
 				processReceivedMessage(message, chan);
 			}
