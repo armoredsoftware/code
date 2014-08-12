@@ -62,8 +62,10 @@ public class FakeJavaMeasurer {
 				String message = vchanUtil.readChunkedMessage(logger, chan);
 				// test to discard null character
 				System.out.println("message as string length: "+ message.length());
-				message = cStringToJavaString(message);
+				
 				System.out.println("Received: " + message);
+				System.out.println("Received (trimmed): " + message.trim());
+				message = justJSON(message);
 				processReceivedMessage(message, chan);
 			}  
 
@@ -71,13 +73,20 @@ public class FakeJavaMeasurer {
 
 	}
 
-	private static String cStringToJavaString(String message) {
-		char[] chars = message.toCharArray();
+	private static String justJSON(String message) {
+		char[] chars = message.trim().toCharArray();
 		char[] result = new char[chars.length];
 
-		for (int i = 0; i < chars.length; i++) {
-			result[i] = chars[i];
-		}
+		int count =0;
+		int i=0;
+		do {
+			if (chars[i] == '{') {
+				count++;
+			}else if(chars[i]=='}') {
+				count--;
+			}
+			i++;
+		} while (count>0);
 		System.out.println("char array length: "+ result.length);
 		return new String(result);
 	}
