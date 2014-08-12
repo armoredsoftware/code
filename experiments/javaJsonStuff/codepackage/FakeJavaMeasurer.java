@@ -15,88 +15,68 @@ import org.json.simple.parser.ParseException;
 public class FakeJavaMeasurer {
 	public static boolean verbose = true;
 
-	public static String prefix = "/users/paulkline/Documents/protocolRepo/protocol/demos/demo2/";
-	public static String deFile = "haskell_out_desiredEvidence";
-	public static String edFile = "haskell_out_evidenceDescriptorW";
-	public static String epFile = "haskell_out_evidencePiece";
-
 	public static int chan_val;
 
 	public static void main(String args[]) {
-
-		// String deStr = getContents(deFile).trim();
-		// String edStr = getContents(edFile).trim();
-		// String epStr = getContents(epFile).trim();
-		//
-		// if (verbose) {
-		// System.out.println("deFile: " + deStr);
-		// System.out.println("edFile: " + edStr);
-		// System.out.println("epFile: " + epStr);
-		// }
-		// DesiredEvidence de = jsonDecode(deStr, DesiredEvidence.class);
-
+		setVerbose(args);
+		
 		Scanner in = new Scanner(System.in);
 		JVChanUtil vchanUtil = new JVChanUtil();
 		System.out.println("Dom ID: " + vchanUtil.getDomId());
-		// System.out.println("Server (1) or Client (0):");
-		// int srv = in.nextInt();
-		int srv = 1;
-
 		System.out.println("Enter a Dom ID: ");
 		chan_val = in.nextInt();
 		long logger = vchanUtil.createLogger();
 		long chan;
-		if (srv == 1) {
-			chan = vchanUtil.server_init(logger, chan_val);
-			
-		} else {
-			chan = vchanUtil.client_init(logger, chan_val);
-			String mesg = "Testing vchan JNI";
-			System.out.println("Sending: " + mesg);
-			vchanUtil.sendChunkedMessage(logger, chan, mesg, mesg.length());
-		}
-		if (srv == 1) {
-			while (true) {
-				vchanUtil.ctrlWait(chan);
+		chan = vchanUtil.server_init(logger, chan_val);
 
-				String message = vchanUtil.readChunkedMessage(logger, chan);
-				// test to discard null character
-				//System.out.println("message as string length: "+ message.length());
-				
+		while (true) {
+			vchanUtil.ctrlWait(chan);
+			String message = vchanUtil.readChunkedMessage(logger, chan);
+			if (verbose) {
 				System.out.println("Received: " + message);
-				//System.out.println("Received (trimmed): " + message.trim());
-				message = justJSON(message);
-				System.out.println("justJSON(message)=" + message);
-				processReceivedMessage(message, chan);
-			}  
-
+			}
+			//message = justJSON(message); //Justin says I no longer need to do this; is fixed.
+			//System.out.println("justJSON(message)=" + message);
+			processReceivedMessage(message, chan);
 		}
-
 	}
 
+	private static void setVerbose(String[] args) {
+		if (args.length>0) {
+			if (args[0].compareToIgnoreCase("true")==0 || 
+					args[0].compareToIgnoreCase("t")==0) {
+				verbose= true;
+			}
+			if (args[0].compareToIgnoreCase("false")==0 || 
+					args[0].compareToIgnoreCase("f")==0) {
+				verbose= false;
+			}
+		}
+	}
+
+	//no longer in use/needed.
 	private static String justJSON(String message) {
 		char[] chars = message.trim().toCharArray();
 		StringBuilder sb = new StringBuilder(chars.length);
-		
-		
 
-		int count =0;
-		int i=0;
+		int count = 0;
+		int i = 0;
 		do {
 			if (chars[i] == '{') {
 				count++;
-			}else if(chars[i]=='}') {
+			} else if (chars[i] == '}') {
 				count--;
 			}
 			sb.append(chars[i]);
 			i++;
-		} while (count>0);
-		System.out.println("char array length: "+ sb.toString().length());
+		} while (count > 0);
+		System.out.println("char array length: " + sb.toString().length());
 		return sb.toString();
 	}
 
 	private static void processReceivedMessage(String jsonmessage, long chan) {
 
+		
 		EvidenceDescriptor ed = generaljsonDecode(jsonmessage);// (jsonmessage,
 		System.out.println("Here is the evidenceDescriptor: "
 				+ ed.getEvidenceDescriptor());
@@ -108,7 +88,7 @@ public class FakeJavaMeasurer {
 			response = new EvidencePiece(new long[] { 0, 1 }, "M1");
 
 		} else if (ed.getEvidenceDescriptor().compareTo("D2") == 0) {
-			response = new EvidencePiece(new long[] { 0, 1, 2 },"M2");
+			response = new EvidencePiece(new long[] { 0, 1, 2 }, "M2");
 
 		}
 		send(response, chan);
@@ -143,14 +123,15 @@ public class FakeJavaMeasurer {
 	private static void send(EvidencePiece response, long chan) {
 		JVChanUtil vchanUtil = new JVChanUtil();
 		long logger = vchanUtil.createLogger();
-//		long chan;
+		// long chan;
 
-		System.out.println("about to send message this is chan_val:" + chan_val);
+		System.out
+				.println("about to send message this is chan_val:" + chan_val);
 		JSONObject jsonObj = response.jsonEncode();
 		String mesg = jsonObj.toJSONString();
 		System.out.println("Sending: " + mesg);
-//		chan = vchanUtil.client_init(logger, chan_val);
-		
+		// chan = vchanUtil.client_init(logger, chan_val);
+
 		vchanUtil.sendChunkedMessage(logger, chan, mesg, mesg.length());
 
 	}
