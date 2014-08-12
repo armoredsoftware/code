@@ -11,6 +11,7 @@ public class JVChanUtil {
     public native long server_init(long logger, int clientId);
     
     public native void ctrlWait(long chan);
+    public native void ctrlClose(long chan);
     public native int sendChunkedMessage(long logger, long chan, String msg, int size);
     public native String readChunkedMessage(long logger, long chan);
 
