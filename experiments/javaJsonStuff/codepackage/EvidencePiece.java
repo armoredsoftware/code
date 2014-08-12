@@ -52,7 +52,7 @@ public class EvidencePiece{
 		jObj.put("m0Rep_EvidencePiece",jarray);
 		JSONObject wrapper = new JSONObject();
 		wrapper.put("tag", "EvidencePieceW");
-		wrapper.put("evidencePiece", jObj);
+		wrapper.put("getEvidencePiece", jObj);
 		return wrapper;
 		
 		
