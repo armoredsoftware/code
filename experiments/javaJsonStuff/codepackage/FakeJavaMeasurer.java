@@ -61,6 +61,7 @@ public class FakeJavaMeasurer {
 
 				String message = vchanUtil.readChunkedMessage(logger, chan);
 				// test to discard null character
+				System.out.println("message as string length: "+ message.length());
 				message = cStringToJavaString(message);
 				System.out.println("Received: " + message);
 				processReceivedMessage(message, chan);
@@ -77,6 +78,7 @@ public class FakeJavaMeasurer {
 		for (int i = 0; i < chars.length; i++) {
 			result[i] = chars[i];
 		}
+		System.out.println("char array length: "+ result.length);
 		return new String(result);
 	}
 
