@@ -7,6 +7,8 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Scanner;
 
+import javax.swing.text.StyledEditorKit.ForegroundAction;
+
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -29,7 +31,8 @@ public class FakeJavaMeasurer {
 		long chan;
 		chan = vchanUtil.server_init(logger, chan_val);
 
-		while (true) {
+		int counter=0;
+		while (true && counter <3) {
 			vchanUtil.ctrlWait(chan);
 			String message = vchanUtil.readChunkedMessage(logger, chan);
 			if (verbose) {
@@ -38,7 +41,9 @@ public class FakeJavaMeasurer {
 			//message = justJSON(message); //Justin says I no longer need to do this; is fixed.
 			//System.out.println("justJSON(message)=" + message);
 			processReceivedMessage(message, chan);
+			counter++;
 		}
+		vchanUtil.ctrlClose(chan);
 	}
 
 	private static void setVerbose(String[] args) {
@@ -52,7 +57,9 @@ public class FakeJavaMeasurer {
 				verbose= false;
 			}
 		}
+		
 	}
+	
 
 	//no longer in use/needed.
 	private static String justJSON(String message) {
