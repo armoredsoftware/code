@@ -10,5 +10,12 @@ elif [ "$1" == "jh" ]; then
    javac JVChanUtil.java
    javah -jni JVChanUtil
    vi JVChanUtil.h
-fi
+else
+   echo
+   echo "Requires argument to run:"
+   echo "  all - runs javac javah and gcc to create a shared library"
+   echo "  java - runs javac and javah"
+   echo "  jh   - runs javac and javah and does a vi on JVChanUtil.h"
+   echo
 
+fi

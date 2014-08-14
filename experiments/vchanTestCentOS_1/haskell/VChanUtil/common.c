@@ -319,9 +319,16 @@ struct libxenvchan * txCtrl, char * msg, int size ) {
   int writeSize = 0;
   int result = 0;
   int i = 0;
+  int j = 0;
   int idx = 0;
   int n = 1;
-  
+
+  printf("VCHAN C Sending: \n");  
+  for (i=0; i < size; i++){
+    printf("%c",msg[i]);
+  }
+  printf("\n");
+
   //If this fails we need to change the header size to have more digits
   if ( size > 9999999){
     fprintf(stderr, "Message size was too large (maxSize: (%d), will need to change the header size to send a message of that size: %d\n",9999999, size);
@@ -357,12 +364,12 @@ struct libxenvchan * txCtrl, char * msg, int size ) {
     buf[0] = (char) 254; // not chunked
     sprintf(buf+1,"%7d",size);
     memcpy(buf+headerSize,msg,size);
-/*    printf("HexDump\n");
+   /* printf("HexDump\n");
     for (i = 0; i < size+headerSize;i++){
         printf("%2x ",buf[i]);
     } 
     printf("\n");
-*/
+    */
   }
   
   //chunk
@@ -420,7 +427,7 @@ struct libxenvchan * txCtrl, char * msg, int size ) {
       printf("%2x ",chunk[j]);
     }
      printf("\n");
-  */
+*/  
     while(libxenvchan_buffer_space(txCtrl) < maxSize){
 //         printf("Waiting for space to write\n");
       } 
@@ -485,7 +492,7 @@ char * readChunkedMessage(xentoollog_logger *xc_logger, struct libxenvchan *ctrl
    char * header = (char *) malloc ( headerSize * sizeof(char));
    char * mesg;
    int size;
-   //int i = 0;
+   int i = 0;
    char * chunk;
    int chunkSize = 0;
    char * p;
@@ -623,8 +630,8 @@ char * readChunkedMessage(xentoollog_logger *xc_logger, struct libxenvchan *ctrl
      size = libxenvchan_read(ctrl,mesg,messageSize);
    }
      free(header);
-
-     /*printf("Size Data: %d\n",messageSize);
+     printf("VCHAN C Receive\n");
+     printf("Size Data: %d\n",messageSize);
 
      for (i = 0; i < messageSize; i++){
         printf("%c",mesg[i]);
@@ -635,7 +642,6 @@ char * readChunkedMessage(xentoollog_logger *xc_logger, struct libxenvchan *ctrl
         printf("%2x ",mesg[i]);
      } 
      printf("\n");
-     */ 
   return mesg;
 }
 

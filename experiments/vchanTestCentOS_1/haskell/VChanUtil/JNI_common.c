@@ -59,8 +59,12 @@ JNIEXPORT jstring JNICALL Java_JVChanUtil_readChunkedMessage (JNIEnv *env, jobje
   xentoollog_logger *logger = (xentoollog_logger *) jlogger;
   struct libxenvchan * chan = (struct libxenvchan *) jchan;
   int size = 0;
-  const char *bytes  = readChunkedMessage(logger,chan,&size); 
-  return (*env)->NewStringUTF(env, bytes);
+  char *bytes  = readChunkedMessage(logger,chan,&size); 
+  char * chars = (char *) malloc(sizeof(char)* (size + 1));
+  memcpy(chars,bytes,size);
+  chars[size] = '\0';
+  jstring mesg = (*env)->NewStringUTF(env, chars);
+  return mesg;
 
 }
 
@@ -68,6 +72,11 @@ JNIEXPORT jstring JNICALL Java_JVChanUtil_readChunkedMessage (JNIEnv *env, jobje
 JNIEXPORT void JNICALL Java_JVChanUtil_ctrlWait (JNIEnv *env, jobject obj, jlong jchan){
   struct libxenvchan * chan = (struct libxenvchan *) jchan;
   libxenvchan_wait(chan);
+}
+
+JNIEXPORT void JNICALL Java_JVChanUtil_ctrlClose (JNIEnv *env, jobject obj, jlong jchan){
+  struct libxenvchan * chan = (struct libxenvchan *) jchan;
+  libxenvchan_close(chan);
 }
 
 int getDomId(void){
