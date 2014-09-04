@@ -767,3 +767,13 @@ char * receive(struct libxenvchan * chan, int* size){
   xtl_logger_destroy((xentoollog_logger *)logger);
   return msg;
 }
+
+int libxenvchan_wait_wrapper(struct libxenvchan *ctrl){
+  return libxenvchan_wait(ctrl);
+}
+
+int libxenvchan_data_ready_wrapper(struct libxenvchan *ctrl){
+  return libxenvchan_data_ready(ctrl);
+}
+
+

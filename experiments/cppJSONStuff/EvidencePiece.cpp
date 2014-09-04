@@ -16,26 +16,29 @@ EvidencePiece::EvidencePiece() {
 	// TODO Auto-generated constructor stub
 
 }
-std::string type;
-std::string constructor;
+std::string mytype;
+std::string myconstructor;
 int *mycontents;
 int mysize;
+EvidencePiece::EvidencePiece(int *contents, int size, string constructorr){
+  mycontents=contents;
+  mysize = size;
+  constructor=constructorr;
+
+}
 EvidencePiece::EvidencePiece(Json::Value & value){
 
 
-	type=value["tag"].asString();
+	mytype=value["tag"].asString();
 	std::string expected = "EvidencePieceW";
 	//std::vector<char> contents;
 
-	if(type.compare(expected)!=0){
-		std::cout << endl << endl << "ABSOLUTE FAILURE. THIS IS NOT AN EVIDENCEPIECEWRAPPER";
-		std::cout <<endl << "What are you trying to pull?"<< endl<<endl;
-
-
+	if(mytype.compare(expected)!=0){
+	  std::cout << endl << endl << "ABSOLUTE FAILURE. Expected: " << expected << " actual: " << mytype;
 		return;
 	}
 
-	std::cout <<endl << "type: " << type << endl;
+	//std::cout <<endl << "type: " << mytype << endl;
 
 
 	//get the data type
@@ -65,7 +68,7 @@ EvidencePiece::EvidencePiece(Json::Value & value){
 
 }
 
-Json::Value toJSON(){
+Json::Value EvidencePiece::toJSON(){
 	Json::Value jsonValueW;
 	Json:: Value jsonValue;
 	Json::Value array;
@@ -73,14 +76,20 @@ Json::Value toJSON(){
 		array.append(mycontents[i]);
 	}
 	jsonValue["tag"] = constructor;
-	jsonValue["m0Rep_EvidencePiece"] = array;
+	cout << "this is the constructoer I am about to make m reps: " << constructor;
+        if(constructor=="M0"){
+	  jsonValue["m0Rep_EvidencePiece"] = array;
+	}else if(constructor=="M1"){
+          jsonValue["m1Rep_EvidencePiece"] = array;
+        }else if(constructor=="M2"){
+          jsonValue["m2Rep_EvidencePiece"] = array;
+        }
+	
 	jsonValueW["tag"] = "EvidencePieceW";
-	jsonValueW["evidencePiece"] = jsonValue;
-	return jsonValue;
+	jsonValueW["getEvidencePiece"] = jsonValue;
+	return jsonValueW;
 }
-std::string EvidencePiece::getRaw(){
-	return type;
-}
+
 EvidencePiece::~EvidencePiece() {
 	// TODO Auto-generated destructor stub
 }

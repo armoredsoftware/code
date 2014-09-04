@@ -12,8 +12,11 @@
 class EvidencePiece {
 public:
 	std::string constructor;
-	std::vector<unsigned char> contents;
+	int* mycontents;
+	int mysize;
+	Json::Value toJSON(void);
 	EvidencePiece(Json::Value & value);
+	EvidencePiece(int *contents, int size,std::string constructorr);
 	EvidencePiece();
 	std::string getRaw();
 
