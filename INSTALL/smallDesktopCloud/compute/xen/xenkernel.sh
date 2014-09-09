@@ -28,7 +28,7 @@ echo "# Get the yum-fastestmirror-plugin"
 YUM_FAST_MIRROR_FILE=yum-plugin-fastestmirror-1.1.30-14.el6.noarch.rpm
 OLDDIR=`pwd`
 cd /tmp
-wget ftp://fr2.rpmfind.net/linux/centos/6.4/os/x86_64/Packages/${YUM_FAST_MIRROR_FILE} || exit 1
+wget ftp://fr2.rpmfind.net/linux/centos/6.5/os/x86_64/Packages/${YUM_FAST_MIRROR_FILE} || exit 1
 yum -y install ${YUM_FAST_MIRROR_FILE}
 cd ${OLDDIR}
 
