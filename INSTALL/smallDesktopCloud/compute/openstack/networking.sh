@@ -21,7 +21,7 @@ if [ "$?" != "0" ] ; then
   install_rdo
   echo "##############################################################"
   echo " We installed openstack-packstack. You need to reboot and then"
-  echo " run this script again.
+  echo " run this script again."
   echo "#############################################################"
   exit 0
 fi
