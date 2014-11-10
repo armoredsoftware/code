@@ -4,7 +4,10 @@
 #
 
 # The UTIL_DIR parameter must contain the directory of the utility scripts.
-if [ "${UTIL_DIR}" == "" ] ; then
+if [ "${UTIL_DIR}" = "" ] ; then
+  echo "!!!!!! Error: The envorinment variable UTIL_DIR must be defined before"
+  echo " using the file 'openstack-fns".
+  exit 1
 fi
 
 source_file ${UTIL_DIR}/network-fns
