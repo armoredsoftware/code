@@ -18,7 +18,7 @@ check_root_user
 # See if RDO is already installed.
 rpm -q packstack-openstack
 if [ "$?" != "0" ] ; then
-  install-rdo
+  install_rdo
   echo "##############################################################"
   echo " We installed openstack-packstack. You need to reboot and then"
   echo " run this script again.
@@ -33,6 +33,6 @@ if [ "$?" != "0" ] ; then
     exit
 fi
 
-remove-rdo-allinone-network-devices
+remove_rdo_allinone_network_devices
 
-fix-rdo-allinone-network-devices ${CLOUD_EXT_COMPUTE_DEVICE} yes br-ex
+fix_rdo_allinone_network_devices ${CLOUD_EXT_COMPUTE_DEVICE} yes br-ex
