@@ -14,7 +14,7 @@ source_file ${UTIL_DIR}/network-fns
 
 # install the latest rdo version. As of this writing the lastest
 # was juno-1
-install-rdo() {
+install_rdo() {
   yum install -y https://rdo.fedorapeople.org/rdo-release.rpm
   
   yum install -y openstack-packstack
@@ -22,7 +22,7 @@ install-rdo() {
 }
 
 # We don't want the allinone network devices.
-remove-rdo-allinone-network-devices() {
+remove_rdo_allinone_network_devices() {
   neutron router-gateway-clear router1
   neutron subnet-delete public_subnet
   neutron net-delete public
@@ -37,7 +37,7 @@ remove-rdo-allinone-network-devices() {
 # <phyDeviceName> - like 'em1'.
 # <promisc>       - promiscuous mode 'yes' or 'no'.
 # <bridgeName>    - name of the bridge device like 'br-ex'
-fix-rdo-allinone-network-devices () {
+fix_rdo_allinone_network_devices () {
   if [ $# -ne 3 ] ; then
     echo "Need 3 arguments to function ${FUNCNAME[0]}."
     exit 1
