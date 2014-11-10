@@ -81,7 +81,7 @@ GATEWAY=$4" $NET_CFG_FILE
       sed -i "/GATEWAY/s/^.*$/GATEWAY=$4/" $NET_CFG_FILE
     fi 
   else
-    # There was not GATEWAY argument so dont do the keyway.
+    # There was no GATEWAY argument so dont do the keyway.
     grep -e "GATEWAY[ ]*=" $NET_CFG_FILE > /dev/null
     if [ "$?" != "0" ] ; then
       # The GATEWAY is not in the file yet so add it after the NETMASK.
@@ -232,7 +232,7 @@ move_ip_from_phy_to_bridge () {
   touch ${IFCFG_BRIDGE}
   echo "# OpenVSwitch bridge" >> ${IFCFG_BRIDGE}
   file_name_equal_val_replace_or_add ${IFCFG_BRIDGE} "DEVICE" "$3"
-  file_name_equal_val_replace_or_add ${IFCFG_BRIDGE} "TYPE" "OVSBridge"
+  file_name_equal_val_replace_or_add ${IFCFG_BRIDGE} "TYPE" "OVSIntPort"
   file_name_equal_val_replace_or_add ${IFCFG_BRIDGE} "DEVICETYPE" "ovs"
   file_name_equal_val_replace_or_add ${IFCFG_BRIDGE} "ONBOOT" "yes"
   file_name_equal_val_replace_or_add ${IFCFG_BRIDGE} "BOOTPROTO" "static"
@@ -266,7 +266,7 @@ move_ip_from_phy_to_bridge () {
 
 
   file_name_equal_val_replace_or_add ${IFCFG_BRIDGE} "NM_CONTROLLED" "no"
-
+  file_name_equal_val_replace_or_add ${IFCFG_BRIDGE} "OVS_BRIDGE" "$3"
   
 
   echo "# Modifying config file of network device '$1'."
@@ -286,6 +286,7 @@ move_ip_from_phy_to_bridge () {
   file_name_equal_val_replace_or_add ${IFCFG_DEVICE} "OVS_BRIDGE" "$3"
   file_name_equal_val_replace_or_add ${IFCFG_DEVICE} "PROMISC" "$2"
   file_name_equal_val_replace_or_add ${IFCFG_DEVICE} "NM_CONTROLLED" "no"
+  file_name_equal_val_replace_or_add ${IFCFG_DEVICE} "IPV6INIT" "no"
 
 
 }
