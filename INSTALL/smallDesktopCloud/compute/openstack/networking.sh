@@ -16,7 +16,7 @@ check_root_user
 
 # For now we are using the RDO allinone.
 # See if RDO is already installed.
-rpm -q packstack-openstack
+rpm -q openstack-packstack
 if [ "$?" != "0" ] ; then
   install_rdo
   echo "##############################################################"
