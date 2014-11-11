@@ -47,10 +47,9 @@ int sendChunkedMessage(xentoollog_logger * xc_logger, struct libxenvchan * txCtr
 
 int getDomId(void);
 xentoollog_logger_stdiostream * createDebugLogger(void);
-struct libxenvchan * client_init(xentoollog_logger * xc_logger, int serverId);
-struct libxenvchan * server_init(xentoollog_logger * xc_logger, int clientId);
-int send(struct libxenvchan * chan, char * message, int size);
-char * receive(struct libxenvchan * chan, int* size );
-void closeTest(struct libxenvchan* ctrl);
+struct libxenvchan * vchan_client_init(xentoollog_logger * xc_logger, int serverId);
+struct libxenvchan * vchan_server_init(xentoollog_logger * xc_logger, int clientId);
+int vchan_send(struct libxenvchan * chan, char * message, int size);
+char * vchan_receive(struct libxenvchan * chan, int* size );
 
 #endif

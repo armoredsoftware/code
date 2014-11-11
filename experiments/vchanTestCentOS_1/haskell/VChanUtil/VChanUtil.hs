@@ -58,10 +58,10 @@ foreign import ccall unsafe "exp1Common.h xtl_logger_destroy"
 foreign import ccall unsafe "exp1Common.h createReceiveChanP"
     c_createReceiveChanP:: XenToolLogger -> CInt-> CString -> IO (LibXenVChan) 
 
-foreign import ccall unsafe "exp1Common.h client_init"
+foreign import ccall unsafe "exp1Common.h vchan_client_init"
     c_client_init:: XenToolLogger -> CInt-> IO (LibXenVChan) 
 
-foreign import ccall unsafe "exp1Common.h server_init"
+foreign import ccall unsafe "exp1Common.h vchan_server_init"
     c_server_init:: XenToolLogger -> CInt-> IO (LibXenVChan) 
 
 foreign import ccall unsafe "exp1Common.h createTransmitChanP"

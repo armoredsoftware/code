@@ -22,7 +22,7 @@ void sendForever(struct libxenvchan * chan){
    while (1){
      printf("Enter text to send:\n");
      fgets(tmp, 256, stdin);
-     send(chan,tmp, strlen(tmp)); 
+     vchan_send(chan,tmp, strlen(tmp)); 
    }
 
 }
@@ -34,7 +34,7 @@ void receiveForever(struct libxenvchan *chan){
 
   while(1){ 
     libxenvchan_wait(chan);
-    msg = receive(chan,&size);
+    msg = vchan_receive(chan,&size);
     printf("Received: ");
     for(i = 0; i< size; i++){
       printf("%c",msg[i]);
@@ -53,6 +53,10 @@ int main(int argc, char **argv)
   int selfId; // domainID of this node;
   int otherId;
   int client= 0;
+  xentoollog_logger_stdiostream * xc_logger;
+
+  xc_logger = createDebugLogger();
+
   selfId =getDomId();
   fprintf(stdout,"Client: Domain Id: %d\n", selfId);
 
@@ -65,9 +69,9 @@ int main(int argc, char **argv)
   sscanf(argv[2],"%d",&otherId);
 
   if (!client){
-     chan = server_init(otherId);
+     chan = vchan_server_init((xentoollog_logger *) xc_logger,otherId);
   }else{
-     chan = client_init(otherId);
+     chan = vchan_client_init((xentoollog_logger *)xc_logger, otherId);
   }
    
   if (!client){
