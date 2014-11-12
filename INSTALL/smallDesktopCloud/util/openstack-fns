@@ -44,6 +44,8 @@ fix_rdo_allinone_network_devices () {
   fi
   move_ip_from_phy_to_bridge $1 $2 $3
 
+  systemctl restart network
+
   neutron router-create router1
   neutron net-create private
   neutron subnet-create --name private_subnet private 192.168.100.0/24 --allocation-pool start=192.168.100.224,end=192.168.100.254
