@@ -17,6 +17,7 @@
 #include <libxenvchan.h>
 #include <unistd.h>
 #include "exp1Common.h"
+#include <sys/mman.h>
 
 int getDomId(void){
   struct xs_handle   *handle= 0;
@@ -30,6 +31,17 @@ int getDomId(void){
   selfId =(int) strtol((char *)xs_read(handle, XBT_NULL,"domid",NULL),(char **)NULL,10);
   return selfId;
 }
+
+struct libxenvchan * vchan_client_init(xentoollog_logger * logger, int srvId){
+   int clientId = getDomId();
+   return createTransmitChanP(logger, srvId, clientId, "data/serverVchan");
+
+}
+
+struct libxenvchan * vchan_server_init(xentoollog_logger *logger, int clientId){
+    return createReceiveChanP(logger, clientId, "data/serverVchan");
+}
+
 
 xentoollog_logger_stdiostream * createDebugLogger(){
 
@@ -170,91 +182,6 @@ return txCtrl;
 
 }
 
-
-/*
-// ###################################################################
-// Get a count from a server over a vchan.
-// xc_logger - may be null
-// rxCtrl - vchan control structure created by call to libxenvchan_server_init
-// servCount - the msg count read from the vchan server.
-// return - non 0 is an error.
-int receiveCountFromServer(xentoollog_logger * xc_logger,
-			   struct libxenvchan * rxCtrl,  int * servCount) {
-  int result = 0;
-  char buf[256];
-  int size;
-  char * invalidChar;
-
-  size = EXP1_MSG_LEN;
-
-  // Read the correct number of characters from the server.
-  size = libxenvchan_read(rxCtrl, buf, size);
-
-  // Was there a system error?
-  if (size < 0) {
-    // There was a significant error. Abort.
-    fprintf(stderr, "libxenvchan_read return=%d.\n", size);
-    perror("clientExp1: read failed for serverExp1.");
-    exit(1);
-  }
-
-  // Did we get all of the characters in the message.
-  if (size != EXP1_MSG_LEN) {
-    fprintf(stderr, "clientExp1: We expected to read %d characters for the"
-	    "serverExp1 but got %d from serverExp1\n",
-	    EXP1_MSG_LEN, size);
-    exit(1);
-  }
-
-  buf[EXP1_MSG_LEN] = 0; // put null at end of string so we have a valid C string.
-  // Convert the string to an integer.
-  *servCount = strtol(buf, &invalidChar, 10);
-
-  if ( *invalidChar != '\0' ) {
-    fprintf(stderr, "clientExp1: There was an invalid character in the msg Count. The invalid portion of the msg count is '%s'.\n", invalidChar);
-    exit(1);
-    
-  }
-
-  return result;
-}
-*/
-// ##################################################################
-// Send a count to server over a vchan.
-// xc_logger - may be null
-// txCtrl - vchan control structure created by call to libxenvchan_server_init
-// clientCount - the msg count write to  the vchan server.
-// return - non 0 is an error.
-int sendClientResponse(xentoollog_logger * xc_logger, struct libxenvchan * txCtrl,
-		       int clientCount) {
-  int result = 0;
-  int writeSize;
-  char buf[EXP1_MSG_LEN + 1];
-  char fmt[256];
-
-  // Create the format for writing the message. 
-  // This really should be done once during initialization
-  sprintf(fmt, "%% %dd", EXP1_MSG_LEN); 
-
-  sprintf(buf, fmt, clientCount);
-
-  writeSize = libxenvchan_write(txCtrl, buf, EXP1_MSG_LEN);
-  if (writeSize < 0) {
-    perror("vchan to serverExp1 write");
-    exit(1);
-  }
-  if (writeSize == 0) {
-    perror("write serverExp1 size=0?");
-    exit(1);
-  }
-  if (writeSize != EXP1_MSG_LEN) {
-    perror("write writeExp1 failed to write whole buffer.");
-    exit(1);
-  }
-
-  return result;
-}
-
 //####################################################################
 
 int sendClientMessage(xentoollog_logger * xc_logger, struct libxenvchan * txCtrl,
@@ -306,7 +233,7 @@ struct libxenvchan * txCtrl, char * msg, int size ) {
   int i = 0;
   int idx = 0;
   int n = 1;
-  
+
   //If this fails we need to change the header size to have more digits
   if ( size > 9999999){
     fprintf(stderr, "Message size was too large (maxSize: (%d), will need to change the header size to send a message of that size: %d\n",9999999, size);
@@ -322,7 +249,7 @@ struct libxenvchan * txCtrl, char * msg, int size ) {
       fprintf(stderr, "Error: Failed to allocate space for buffer\n");
       perror("sendChunkedMessage: send failed.");
       exit(1);
-    } 
+    }
 
     buf[0] = (char) 255; //chunked
     sprintf(buf+1,"%7d",size);
@@ -345,17 +272,17 @@ struct libxenvchan * txCtrl, char * msg, int size ) {
 /*    printf("HexDump\n");
     for (i = 0; i < size+headerSize;i++){
         printf("%2x ",buf[i]);
-    } 
+    }
     printf("\n");
 */
   }
   
   //chunk
   if (size > availSize){
- /*   printf("HexDump\n");
+/*    printf("HexDump\n");
     for (i = 0; i < maxSize;i++){
         printf("%2x ",buf[i]);
-    } 
+    }
     printf("\n");
 */
     // chunked totalsize payloadSize payload
@@ -385,9 +312,9 @@ struct libxenvchan * txCtrl, char * msg, int size ) {
 /*      printf("Chunk\n");
       for (j = 0; j < maxSize;j++){
           printf("%2x ",chunk[j]);
-      } 
+      }
       printf("\n");
-*/      
+*/
       //wait until there is enough space
       while(libxenvchan_buffer_space(txCtrl) < maxSize){
 //         printf("Waiting for space to write\n");
@@ -405,17 +332,17 @@ struct libxenvchan * txCtrl, char * msg, int size ) {
       printf("%2x ",chunk[j]);
     }
      printf("\n");
-  */
+*/
     while(libxenvchan_buffer_space(txCtrl) < maxSize){
 //         printf("Waiting for space to write\n");
-      } 
+      }
     writeSize+= libxenvchan_write(txCtrl,chunk,size-idx+headerSize );
     free(chunk);
   //no chunk
   }else{
     while(libxenvchan_buffer_space(txCtrl) < maxSize){
 //         printf("Waiting for space to write\n");
-      } 
+      }
     writeSize = libxenvchan_write(txCtrl, buf, size+headerSize);
     free(buf);
   }
@@ -513,9 +440,9 @@ char * readChunkedMessage(xentoollog_logger *xc_logger, struct libxenvchan *ctrl
    
    if (isChunked(header) ){
        
- /*    printf("Chunked Data\n");
+/*     printf("Chunked Data\n");
      printf("DataReady: %d\n",libxenvchan_data_ready(ctrl));
-*/     
+*/
    while(!libxenvchan_data_ready(ctrl)){}
      //get second size
      size = libxenvchan_read(ctrl,header, headerSize-1);
@@ -553,12 +480,12 @@ char * readChunkedMessage(xentoollog_logger *xc_logger, struct libxenvchan *ctrl
      p= p+chunkSize;
 
      free(chunk);
-     /*printf("HexDump\n");
+/*     printf("HexDump\n");
      for (i = 0; i < messageSize;i++){
        printf("%2x ",mesg[i]);
-     } 
+     }
      printf("\n");
-     */
+*/
      while(p - mesg < messageSize){
         //printf("DataReady: %d\n",libxenvchan_data_ready(ctrl));
         if (libxenvchan_data_ready(ctrl)>headerSize){
@@ -595,12 +522,12 @@ char * readChunkedMessage(xentoollog_logger *xc_logger, struct libxenvchan *ctrl
           p= p+chunkSize;
 
           free(chunk);
-          /*printf("Math: %d\n",p-mesg);
+/*          printf("Math: %d\n",p-mesg);
           printf("HexDump\n");
           for (i = 0; i < messageSize;i++){
             printf("%2x ",mesg[i]);
           }
-          */
+*/
         }
      }
    }else{
@@ -608,8 +535,7 @@ char * readChunkedMessage(xentoollog_logger *xc_logger, struct libxenvchan *ctrl
      size = libxenvchan_read(ctrl,mesg,messageSize);
    }
      free(header);
-
-     /*printf("Size Data: %d\n",messageSize);
+/*     printf("Size Data: %d\n",messageSize);
 
      for (i = 0; i < messageSize; i++){
         printf("%c",mesg[i]);
@@ -618,9 +544,9 @@ char * readChunkedMessage(xentoollog_logger *xc_logger, struct libxenvchan *ctrl
      printf("HexDump\n");
      for (i = 0; i < messageSize;i++){
         printf("%2x ",mesg[i]);
-     } 
+     }
      printf("\n");
-     */ 
+*/
   return mesg;
 }
 
@@ -667,51 +593,10 @@ int readClientMessage(xentoollog_logger * xc_logger, struct libxenvchan * ctrl,
   return result;
 }
 
-//####################################################################
-
-int checkClientResponse(xentoollog_logger * xc_logger, struct libxenvchan * ctrl,
-                        int * count) {
-  int result = 0;
-  int size;
-  char buf[256];
-  char * invalidChar;
-
-  size = EXP1_MSG_LEN;
-
-  size = libxenvchan_read(ctrl, buf, size);
-
-  // Was there a system error?
-  if (size < 0) {
-    // There was a significant error. Abort.
-    fprintf(stderr, "libxenvchan_read return=%d.\n", size);
-    perror("serverExp1: read failed for clientExp1.");
-    exit(1);
-  }
-
-  // Did we get all of the characters in the message.
-  if (size != EXP1_MSG_LEN) {
-    fprintf(stderr, "serverExp1: We expected to read %d characters for the"
-            "clientExp1 but got %d from clientExp1\n",
-            EXP1_MSG_LEN, size);
-    exit(1);
-  }
-
-  buf[EXP1_MSG_LEN] = 0; // put null at end of string so we have a valid C string.
-  // Convert the string to an integer.
-  *count = strtol(buf, &invalidChar, 10);
-
-  if ( *invalidChar != '\0' ) {
-    fprintf(stderr, "serverExp1: There was an invalid character in the msg count. The invalid portion of the msg count is '%s'.\n", invalidChar);
-    exit(1);
-
-  }
-
-  return result;
-}
 //Simple Functions
 //####################################################################
-
-struct libxenvchan * client_init (int serverId){
+/*
+struct libxenvchan * vchan_client_init (int serverId){
   xentoollog_logger_stdiostream * logger =  createDebugLogger();
   int clientId = getDomId();
   struct libxenvchan * chan  =createTransmitChanP((xentoollog_logger *)logger, serverId, clientId, "data/serverVchan");
@@ -723,7 +608,7 @@ struct libxenvchan * client_init (int serverId){
 
 //####################################################################
 
-struct libxenvchan * server_init (int clientId){
+struct libxenvchan * vchan_server_init (int clientId){
   xentoollog_logger_stdiostream * logger =  createDebugLogger();
   struct libxenvchan * chan  =createReceiveChanP((xentoollog_logger *)logger, clientId, "data/serverVchan");
 
@@ -731,10 +616,10 @@ struct libxenvchan * server_init (int clientId){
 
   return chan;
 }
-
+*/
 //####################################################################
 
-int send(struct libxenvchan * chan, char * message, int size){
+int vchan_send(struct libxenvchan * chan, char * message, int size){
   xentoollog_logger_stdiostream * logger =  createDebugLogger();
 
   int res =  sendChunkedMessage((xentoollog_logger *)logger, chan, message, size);
@@ -744,7 +629,7 @@ int send(struct libxenvchan * chan, char * message, int size){
 
 //####################################################################
 
-char * receive(struct libxenvchan * chan, int* size){
+char * vchan_receive(struct libxenvchan * chan, int* size){
   xentoollog_logger_stdiostream * logger =  createDebugLogger();
 
   char * msg=readChunkedMessage((xentoollog_logger *)logger,chan,size); 
