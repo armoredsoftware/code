@@ -27,13 +27,21 @@ if [ "$?" != "0" ] ; then
 fi
 
 
-#if [ "$?" != "0" ] ; then
-#    echo "!!!!! Packstack --allinone failed. Stopping".
-#    exit
-#fi
-
-# We need the tenatn name and password to perform neutron changes.
+# We need the tenant name and password to perform neutron changes.
 source_file /root/keystonerc_admin
+
+move_ip_from_phy_to_bridge ${CLOUD_EXT_COMPUTE_DEVICE} no br-ex
+
+# fix a neutron config file
+
+sed -i -e "$ a \
+network_vlan_ranges = physnet1" /etc/neutron/plugin.ini
+sed -i -e "$ a \
+bridge_mappings = physnet1:br-ex" /etc/neutron/plugin.ini
+
+# restart the network.
+systemctl restart network
+
 
 remove_rdo_allinone_network_devices
 
