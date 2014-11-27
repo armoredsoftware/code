@@ -18,15 +18,21 @@ check_root_user
 # See if RDO is already installed.
 rpm -q openstack-packstack
 if [ "$?" != "0" ] ; then
-  install_rdo
+# install the latest rdo version. As of this writing the lastest
+# was juno-1
+  yum install -y https://rdo.fedorapeople.org/rdo-release.rpm
+  
+  yum install -y openstack-packstack
+
   echo "##############################################################"
   echo " We installed openstack-packstack. You need to reboot and then"
-  echo " run this script again to finish initial install."
+  echo " run this same script again to finish initial install."
   echo "#############################################################"
   exit 0
 fi
 
-packstack --allinone
+
+packstack --allinone --provision-all-in-one-ovs-bridge=n
 
 if [ "$?" != "0" ] ; then
     echo "!!!!! Packstack --allinone failed. Stopping".
