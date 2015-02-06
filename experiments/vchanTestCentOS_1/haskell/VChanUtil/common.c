@@ -32,6 +32,14 @@ int getDomId(void){
   return selfId;
 }
 
+
+int isNull(struct libxenvchan * chan){
+  if( chan == NULL)
+     return 1;
+  return 0; 
+
+}
+
 struct libxenvchan * vchan_client_init(xentoollog_logger * logger, int srvId){
    int clientId = getDomId();
    return createTransmitChanP(logger, srvId, clientId, "data/serverVchan");
@@ -40,6 +48,37 @@ struct libxenvchan * vchan_client_init(xentoollog_logger * logger, int srvId){
 
 struct libxenvchan * vchan_server_init(xentoollog_logger *logger, int clientId){
     return createReceiveChanP(logger, clientId, "data/serverVchan");
+}
+
+struct libxenvchan * vchan_maybe_client_init(xentoollog_logger * logger, int srvId){
+   int sourceId = getDomId();
+   int destId = srvId;
+   struct libxenvchan *txCtrl=0;
+   char serverRxXS [256]; // xenStore path for the server's receive.
+   char  p[256];
+   char *path = "data/serverVchan";
+   
+   
+   if (!path){
+     sprintf (p,"%s",SERV_REL_RX_XS_PATH);
+   }else{
+     sprintf (p,"%s",path);
+   }
+
+   sprintf(p, "%s_%d",p,sourceId);
+   sprintf(serverRxXS, "/local/domain/%d/%s", destId,
+           p);
+
+   // We act as a client so the servers Rx is our Tx.
+   fprintf(stdout, "transmitChan: vchan init for xs=%s to domId=%d,\n",
+           serverRxXS, sourceId );
+   txCtrl = libxenvchan_client_init((xentoollog_logger *)logger,
+                                    destId, serverRxXS);
+ 
+   if(txCtrl == NULL) {
+      return NULL;
+   }
+   return txCtrl;
 }
 
 
@@ -123,9 +162,9 @@ struct libxenvchan * createReceiveChanP (xentoollog_logger * xc_logger, int id, 
                                    id, p, 0, 0);
 
   if(rxCtrl == NULL) {
-    // We had an error trying to initialise the client vchan.
+    // We had an error trying to initialise the server vchan.
     char * lclErrStr = strerror(errno);
-    fprintf(stderr, "Error: %s: libxenvchan_client_init: domId=%d, xsPath=%s.\n",
+    fprintf(stderr, "Error: %s: libxenvchan_server_init: domId=%d, xsPath=%s.\n",
             lclErrStr, id, p);
     if(errno == ENOENT) {
       fprintf(stderr, "    kernel module xen_gntalloc (/dev/xen/gntalloc) or xen_evtchn (/dev/xen/evtchn) may not be running.\n");

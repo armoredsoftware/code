@@ -30,7 +30,7 @@
 #define EXP1_MSG_LEN 8
 
 int readSubExp1DomainID( xentoollog_logger * xc_logger, struct libxenvchan * ctrl);
-
+int isNull(struct libxenvchan * chan);
 struct libxenvchan * createReceiveChan (xentoollog_logger * xc_logger, int id);
 struct libxenvchan * createReceiveChanP (xentoollog_logger * xc_logger, int id, char * optional_rel_path);
 
@@ -48,6 +48,7 @@ int sendChunkedMessage(xentoollog_logger * xc_logger, struct libxenvchan * txCtr
 int getDomId(void);
 xentoollog_logger_stdiostream * createDebugLogger(void);
 struct libxenvchan * vchan_client_init(xentoollog_logger * xc_logger, int serverId);
+struct libxenvchan * vchan_maybe_client_init(xentoollog_logger * xc_logger, int serverId);
 struct libxenvchan * vchan_server_init(xentoollog_logger * xc_logger, int clientId);
 int vchan_send(struct libxenvchan * chan, char * message, int size);
 char * vchan_receive(struct libxenvchan * chan, int* size );

@@ -2,6 +2,7 @@
 module VChanUtil 
 (getDomId
 ,client_init
+,maybe_client_init
 ,server_init
 ,receive
 ,send
@@ -46,6 +47,9 @@ data VChan_internal
 foreign import ccall unsafe "exp1Common.h getDomId"
     c_getDomId:: IO CInt
 
+foreign import ccall unsafe "exp1Common.h isNull"
+    c_isNull:: (LibXenVChan) -> IO CInt
+
 foreign import ccall unsafe "exp1Common.h printf"
     c_printf:: CString-> IO (CInt)
 
@@ -60,6 +64,9 @@ foreign import ccall unsafe "exp1Common.h createReceiveChanP"
 
 foreign import ccall unsafe "exp1Common.h vchan_client_init"
     c_client_init:: XenToolLogger -> CInt-> IO (LibXenVChan) 
+
+foreign import ccall unsafe "exp1Common.h vchan_maybe_client_init"
+    c_maybe_client_init:: XenToolLogger -> CInt-> IO (LibXenVChan) 
 
 foreign import ccall unsafe "exp1Common.h vchan_server_init"
     c_server_init:: XenToolLogger -> CInt-> IO (LibXenVChan) 
@@ -263,7 +270,15 @@ client_init otherDom = do logger <- createLogger
  --                         destroyLogger logger
                           return chan
                            
-                        
+maybe_client_init:: Int-> IO ( Maybe LibXenVChan)
+maybe_client_init otherDom = do logger <- createLogger
+                                chan <-c_maybe_client_init logger (fromIntegral otherDom :: CInt)
+ --                               destroyLogger logger
+                                bool <- c_isNull chan
+                                if (fromIntegral bool :: Int ) == 0 then
+                                     return (Just chan)
+                                else
+                                     return Nothing
 
 server_init::Int-> IO (LibXenVChan)
 server_init otherDom = do logger <- createLogger
