@@ -449,7 +449,9 @@ char * readChunkedMessage(xentoollog_logger *xc_logger, struct libxenvchan *ctrl
    }
 
    //get Header
-   while(!libxenvchan_data_ready(ctrl)){}
+   while(!libxenvchan_data_ready(ctrl)){
+     sleep(0.10);
+   }
    size = libxenvchan_read(ctrl,header, headerSize);  
    if ( size != headerSize){
     fprintf(stderr, "Error: libxenvchan_read return=%d. should be %d\n", size, headerSize);
@@ -676,3 +678,16 @@ char * vchan_receive(struct libxenvchan * chan, int* size){
   xtl_logger_destroy((xentoollog_logger *)logger);
   return msg;
 }
+
+//####################################################################
+
+char * vchan_receive_timeout(struct libxenvchan * chan, int* size){
+  xentoollog_logger_stdiostream * logger =  createDebugLogger();
+
+  char * msg=readChunkedMessage((xentoollog_logger *)logger,chan,size); 
+
+  xtl_logger_destroy((xentoollog_logger *)logger);
+  return msg;
+}
+
+
