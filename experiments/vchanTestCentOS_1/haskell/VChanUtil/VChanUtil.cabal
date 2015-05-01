@@ -2,7 +2,7 @@
 -- documentation, see http://haskell.org/cabal/users-guide/
 
 name:                VChanUtil
-version:             0.1.5.0
+version:             0.1.5.1
 -- synopsis:            
 -- description:         
 license:             BSD3

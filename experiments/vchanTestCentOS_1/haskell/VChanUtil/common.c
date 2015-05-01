@@ -326,7 +326,9 @@ struct libxenvchan * txCtrl, char * msg, int size ) {
 */
     // chunked totalsize payloadSize payload
     // loop until we have enough space
-    while(libxenvchan_buffer_space(txCtrl) <maxSize);
+    while(libxenvchan_buffer_space(txCtrl) <maxSize){
+      sleep(0.1);
+    }
     writeSize = libxenvchan_write(txCtrl,buf,maxSize); 
 
     free(buf);
@@ -356,6 +358,7 @@ struct libxenvchan * txCtrl, char * msg, int size ) {
 */
       //wait until there is enough space
       while(libxenvchan_buffer_space(txCtrl) < maxSize){
+          sleep(0.1);
 //         printf("Waiting for space to write\n");
       }
       //send chunk
@@ -373,6 +376,7 @@ struct libxenvchan * txCtrl, char * msg, int size ) {
      printf("\n");
 */
     while(libxenvchan_buffer_space(txCtrl) < maxSize){
+         sleep(0.1);
 //         printf("Waiting for space to write\n");
       }
     writeSize+= libxenvchan_write(txCtrl,chunk,size-idx+headerSize );
@@ -380,6 +384,7 @@ struct libxenvchan * txCtrl, char * msg, int size ) {
   //no chunk
   }else{
     while(libxenvchan_buffer_space(txCtrl) < maxSize){
+         sleep(0.1);
 //         printf("Waiting for space to write\n");
       }
     writeSize = libxenvchan_write(txCtrl, buf, size+headerSize);
@@ -484,7 +489,9 @@ char * readChunkedMessage(xentoollog_logger *xc_logger, struct libxenvchan *ctrl
 /*     printf("Chunked Data\n");
      printf("DataReady: %d\n",libxenvchan_data_ready(ctrl));
 */
-   while(!libxenvchan_data_ready(ctrl)){}
+   while(!libxenvchan_data_ready(ctrl)){
+      sleep(0.10);
+   }
      //get second size
      size = libxenvchan_read(ctrl,header, headerSize-1);
      //printf("finished read\n");
@@ -508,7 +515,9 @@ char * readChunkedMessage(xentoollog_logger *xc_logger, struct libxenvchan *ctrl
      }
  
      //read chunk
-     while(!libxenvchan_data_ready(ctrl)){}
+     while(!libxenvchan_data_ready(ctrl)){
+       sleep(0.10);
+     }
      size = libxenvchan_read(ctrl,chunk, chunkSize);
      //printf("Reading Chunk\n");
      
@@ -552,7 +561,9 @@ char * readChunkedMessage(xentoollog_logger *xc_logger, struct libxenvchan *ctrl
 
           
           //loop until we have data ready
-          while (libxenvchan_data_ready(ctrl)<chunkSize){};
+          while (libxenvchan_data_ready(ctrl)<chunkSize){
+            sleep(0.10);
+          };
           size = libxenvchan_read(ctrl,chunk, chunkSize);
           if ( size != chunkSize){
             fprintf(stderr, "libxenvchan_read return=%d. should be %d\n", size, chunkSize);
@@ -678,16 +689,3 @@ char * vchan_receive(struct libxenvchan * chan, int* size){
   xtl_logger_destroy((xentoollog_logger *)logger);
   return msg;
 }
-
-//####################################################################
-
-char * vchan_receive_timeout(struct libxenvchan * chan, int* size){
-  xentoollog_logger_stdiostream * logger =  createDebugLogger();
-
-  char * msg=readChunkedMessage((xentoollog_logger *)logger,chan,size); 
-
-  xtl_logger_destroy((xentoollog_logger *)logger);
-  return msg;
-}
-
-

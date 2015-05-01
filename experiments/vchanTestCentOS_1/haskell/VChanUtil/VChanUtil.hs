@@ -44,58 +44,58 @@ data Logger_internal
 type  LibXenVChan = Ptr VChan_internal
 data VChan_internal
 
-foreign import ccall unsafe "exp1Common.h getDomId"
+foreign import ccall safe "exp1Common.h getDomId"
     c_getDomId:: IO CInt
 
-foreign import ccall unsafe "exp1Common.h isNull"
+foreign import ccall safe "exp1Common.h isNull"
     c_isNull:: (LibXenVChan) -> IO CInt
 
-foreign import ccall unsafe "exp1Common.h printf"
+foreign import ccall safe "exp1Common.h printf"
     c_printf:: CString-> IO (CInt)
 
-foreign import ccall unsafe "exp1Common.h createDebugLogger"
+foreign import ccall safe "exp1Common.h createDebugLogger"
     c_createDebugLogger:: IO (XenToolLogger) 
 
-foreign import ccall unsafe "exp1Common.h xtl_logger_destroy"
+foreign import ccall safe "exp1Common.h xtl_logger_destroy"
     c_destroyDebugLogger:: XenToolLogger -> IO () 
 
-foreign import ccall unsafe "exp1Common.h createReceiveChanP"
+foreign import ccall safe "exp1Common.h createReceiveChanP"
     c_createReceiveChanP:: XenToolLogger -> CInt-> CString -> IO (LibXenVChan) 
 
-foreign import ccall unsafe "exp1Common.h vchan_client_init"
+foreign import ccall safe "exp1Common.h vchan_client_init"
     c_client_init:: XenToolLogger -> CInt-> IO (LibXenVChan) 
 
-foreign import ccall unsafe "exp1Common.h vchan_maybe_client_init"
+foreign import ccall safe "exp1Common.h vchan_maybe_client_init"
     c_maybe_client_init:: XenToolLogger -> CInt-> IO (LibXenVChan) 
 
-foreign import ccall unsafe "exp1Common.h vchan_server_init"
+foreign import ccall safe "exp1Common.h vchan_server_init"
     c_server_init:: XenToolLogger -> CInt-> IO (LibXenVChan) 
 
-foreign import ccall unsafe "exp1Common.h createTransmitChanP"
+foreign import ccall safe "exp1Common.h createTransmitChanP"
     c_createTransmitChanP:: XenToolLogger -> CInt-> CInt-> CString -> IO (LibXenVChan) 
 
-foreign import ccall unsafe "exp1Common.h libxenvchan_wait"
+foreign import ccall safe "exp1Common.h libxenvchan_wait"
     c_libxenvchan_wait:: (LibXenVChan)-> IO(CInt)
 
-foreign import ccall unsafe "exp1Common.h libxenvchan_close"
+foreign import ccall safe "exp1Common.h libxenvchan_close"
     c_libxenvchan_close:: (LibXenVChan)-> IO()
 
-foreign import ccall unsafe "exp1Common.h readClientMessage"
+foreign import ccall safe "exp1Common.h readClientMessage"
     c_readClientMessage:: (XenToolLogger)-> LibXenVChan -> CString -> Ptr CInt->IO (CInt)
 
-foreign import ccall unsafe "exp1Common.h sendClientMessage"
+foreign import ccall safe "exp1Common.h sendClientMessage"
     c_sendClientMessage:: (XenToolLogger)-> LibXenVChan -> CString ->CInt-> IO (CInt)
 
-foreign import ccall unsafe "exp1Common.h libxenvchan_data_ready"
+foreign import ccall safe "exp1Common.h libxenvchan_data_ready"
     c_dataReady:: LibXenVChan -> IO (CInt)
 
-foreign import ccall unsafe "exp1Common.h libxenvchan_buffer_space"
+foreign import ccall safe "exp1Common.h libxenvchan_buffer_space"
     c_bufferSpace:: LibXenVChan -> IO (CInt)
 
-foreign import ccall unsafe "exp1Common.h readChunkedMessage"
+foreign import ccall safe "exp1Common.h readChunkedMessage"
     c_readChunkedMessage :: XenToolLogger -> LibXenVChan -> Ptr CInt->IO CString
 
-foreign import ccall unsafe "exp1Common.h sendChunkedMessage"
+foreign import ccall safe "exp1Common.h sendChunkedMessage"
     c_sendChunkedMessage :: XenToolLogger -> LibXenVChan -> CString->CInt->IO(CInt)
 
 getDomId :: IO Int
