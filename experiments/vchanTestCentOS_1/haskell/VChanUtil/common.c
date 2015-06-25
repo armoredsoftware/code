@@ -23,7 +23,7 @@ int getDomId(void){
   struct xs_handle   *handle= 0;
   int selfId = -1;
   handle = xs_open(XS_OPEN_READONLY);
-  if ( handle == NULL){
+  if ( handle == NULL || handle < 0){
     fprintf(stderr, "Unabled to open an interface\n");
     perror("getDomId: xs_open Failed to obtain a handle.");
     return -1;
