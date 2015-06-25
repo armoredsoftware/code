@@ -28,8 +28,17 @@ int getDomId(void){
     perror("getDomId: xs_open Failed to obtain a handle.");
     return -1;
   }
-  selfId =(int) strtol((char *)xs_read(handle, XBT_NULL,"domid",NULL),(char **)NULL,10);
+  char * s = (char *)xs_read(handle, XBT_NULL,"domid",NULL);
+
+  if (s == NULL){
+    fprintf(stderr, "Unabled to open an interface\n");
+    perror("getDomId: xs_open Failed to obtain a handle.");
+    return -1;
+  }
+
+  selfId =(int) strtol(s,(char **)NULL,10);
   return selfId;
+
 }
 
 
